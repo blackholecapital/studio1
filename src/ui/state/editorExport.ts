@@ -1,53 +1,16 @@
-import type { CardModel } from "../hooks/useCardInteractions";
-import { DEFAULT_WALLPAPER_URL } from "../../core/wallpaperCatalog";
+// Types are now defined in the domain layer; re-export for backwards compat.
+export type { PageData, ProjectData, DeployResult } from "../../domain/project/types";
+import type { ProjectData } from "../../domain/project/types";
 
-/* ── Per-page snapshot ── */
-export type PageData = {
-  wallpaper: string;
-  cards: CardModel[];
-  selectedCardId: string;
-  lockSize: boolean;
-  lockPosition: boolean;
-  lockPage: boolean;
-  instructions: string;
-};
+// Factory functions are now in the domain layer; re-export for backwards compat.
+export { makeEmptyPage, makeEmptyProject } from "../../domain/project/defaults";
 
-/* ── Full project (all pages + slug) ── */
-export type ProjectData = {
-  version: 1;
-  slug: string;
-  pages: Record<string, PageData>;
-};
+// Validator provides safe parse for persisted state.
+import { parseProject } from "../../domain/project/validators";
+
+import { R2_DEPLOY_ENDPOINT } from "../../domain/editor/constants";
 
 const STORAGE_PREFIX = "drip-studio:project:";
-const DEFAULT_WALLPAPER = DEFAULT_WALLPAPER_URL;
-
-/* ── Blank page ── */
-export function makeEmptyPage(): PageData {
-  return {
-    wallpaper: DEFAULT_WALLPAPER,
-    cards: [],
-    selectedCardId: "",
-    lockSize: false,
-    lockPosition: false,
-    lockPage: false,
-    instructions: "Add content, skins, media"
-  };
-}
-
-/* ── Blank project ── */
-export function makeEmptyProject(slug: string): ProjectData {
-  return {
-    version: 1,
-    slug,
-    pages: {
-      p1: makeEmptyPage(),
-      p2: makeEmptyPage(),
-      p3: makeEmptyPage(),
-      p4: makeEmptyPage()
-    }
-  };
-}
 
 /* ── Local storage helpers ── */
 function storageKey(slug: string): string {
@@ -58,16 +21,7 @@ export function loadProject(slug: string): ProjectData | null {
   try {
     const raw = localStorage.getItem(storageKey(slug));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as ProjectData;
-    if (parsed?.version !== 1) return null;
-    for (const key of Object.keys(parsed.pages ?? {})) {
-      const page = parsed.pages[key];
-      if (!page) continue;
-      if (typeof page.instructions !== "string" || !page.instructions.trim()) {
-        page.instructions = makeEmptyPage().instructions;
-      }
-    }
-    return parsed;
+    return parseProject(raw);
   } catch {
     return null;
   }
@@ -99,18 +53,12 @@ export function listSavedSlugs(): string[] {
 }
 
 /* ── Deploy to R2 ── */
-export type DeployResult = {
-  ok: boolean;
-  primaryUrl?: string;
-  holidayUrl?: string;
-  error?: string;
-};
+import type { DeployResult } from "../../domain/project/types";
 
 export async function deployGateway(
   project: ProjectData,
   deployPayload?: Record<string, unknown>
 ): Promise<DeployResult> {
-  const R2_DEPLOY_ENDPOINT = `https://tenant-cdn.cryptocapitalgroupfl.workers.dev/deploy-demo`;
 
   // Payload shape: { slug, data: { main, holiday } }
   const body = JSON.stringify({

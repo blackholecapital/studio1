@@ -6,31 +6,28 @@ import { thumbnailUrl, MEDIA_BASE } from "../core/assetResolver";
 import { contentCatalog, type ContentItem } from "../core/contentCatalog";
 import { skinCatalog } from "../core/skinCatalog";
 import {
-  makeEmptyPage,
   loadProject,
   saveProject,
   deployGateway,
-  makeEmptyProject,
-  type ProjectData,
-  type PageData,
 } from "./state/editorExport";
-import {
-  useCardInteractions,
-  type CardModel,
-  type CardInteractionState,
-} from "./hooks/useCardInteractions";
+import { useCardInteractions } from "./hooks/useCardInteractions";
+
+// Domain imports — shared types, constants, selectors, actions
+import type { CardModel, CardInteractionState, PageData, ProjectData } from "../domain/project/types";
+import type { PageKey } from "../domain/project/types";
+import { PAGE_KEYS, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
+import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
+import { MOB_NAV_H, MOBILE_DEPLOY_W, MOBILE_DEPLOY_H, MOBILE_INSTRUCTIONS_IMAGE, UPLOAD_ENDPOINT, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
+import { convertToPng } from "../shared/lib/normalize";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins";
-type PageKey = "p1" | "p2" | "p3" | "p4";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const MOB_NAV_H = 63;
-const INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c4444.png";
+const INSTRUCTIONS_IMAGE = MOBILE_INSTRUCTIONS_IMAGE;
 const DEFAULT_WALLPAPER = DEFAULT_MOBILE_WALLPAPER_URL;
 
-const PAGE_KEYS: PageKey[] = ["p1", "p2", "p3", "p4"];
-
+/** Mobile page titles (uppercase). Desktop uses PAGE_SHORT_TITLES from defaults. */
 const PAGE_TITLES: Record<PageKey, string> = {
   p1: "GATEWAY",
   p2: "MEMBERS",
@@ -42,43 +39,6 @@ const mediaTiles = [
   { id: "media-video-1", type: "video" as const, placeholder: "https://...mp4", buttonLabel: "Video File" },
   { id: "media-image-1", type: "image" as const, placeholder: "https://...",    buttonLabel: "Media File" },
 ];
-
-const UPLOAD_ENDPOINT = "/api/upload";
-const DEMO_CONTENT_BASE = "https://demo-content.xyz-labs.xyz";
-
-/** Convert any image file to PNG via canvas, scaling down to max 1200px on longest side. */
-function convertToPng(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const blobUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(blobUrl);
-      const MAX = 1200;
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      if (w > MAX || h > MAX) {
-        const scale = MAX / Math.max(w, h);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(file); return; }
-      ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob((blob) => {
-        resolve(blob ?? file);
-      }, "image/png");
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(blobUrl);
-      // Fall back to original file if conversion fails
-      resolve(file);
-    };
-    img.src = blobUrl;
-  });
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getMobDims() {
@@ -107,28 +67,6 @@ function makeMobDefaultCard(dims: { width: number; height: number }): CardModel 
     contentImage: INSTRUCTIONS_IMAGE,
     contentCode: "c4444",
     contentDisplay: "image",
-  };
-}
-
-function pageDataToCardState(pd: PageData): CardInteractionState {
-  return {
-    cards: pd.cards,
-    selectedCardId: pd.selectedCardId,
-    lockSize: pd.lockSize,
-    lockPosition: pd.lockPosition,
-    lockPage: pd.lockPage ?? false,
-  };
-}
-
-function cardStateToPageData(cs: CardInteractionState, wallpaper: string): PageData {
-  return {
-    wallpaper,
-    cards: cs.cards,
-    selectedCardId: cs.selectedCardId,
-    lockSize: cs.lockSize,
-    lockPosition: cs.lockPosition,
-    lockPage: cs.lockPage,
-    instructions: "",
   };
 }
 
@@ -286,10 +224,7 @@ export function MobileApp() {
       } else {
         setWallpaper(target.wallpaper || DEFAULT_WALLPAPER);
         setCardState(pageDataToCardState(target));
-        const maxId = target.cards.reduce((max, c) => {
-          const num = parseInt(c.id.replace("card-", ""), 10);
-          return isNaN(num) ? max : Math.max(max, num);
-        }, 0);
+        const maxId = maxCardCounter(target.cards);
         if (maxId >= mobCardCounter) mobCardCounter = maxId;
       }
 
@@ -300,17 +235,6 @@ export function MobileApp() {
   }
 
   // ── Overlap check ──
-  function hasAnyOverlap(cards: CardModel[]) {
-    for (let i = 0; i < cards.length; i++) {
-      const a = cards[i];
-      for (let j = i + 1; j < cards.length; j++) {
-        const b = cards[j];
-        if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) return true;
-      }
-    }
-    return false;
-  }
-
   // ── Save ──
   function handleSave() {
     if (hasAnyOverlap(cardState.cards)) {
@@ -331,8 +255,6 @@ export function MobileApp() {
   }
 
   // ── Deploy ──
-  const PAGE_ROUTES: Record<string, string> = { p1: "gate", p2: "members", p3: "access", p4: "tier-2" };
-
   async function handleDeploy() {
     if (hasAnyOverlap(cardState.cards)) {
       setDeployStatus("⚠ Cannot deploy — overlapping tiles. Move tiles apart first.");
@@ -351,8 +273,6 @@ export function MobileApp() {
     // Scale mobile pixel coords → native 430×860 mobile canvas.
     // The gateway uses these coords with `mobile: true` to render absolutely
     // positioned cards scaled to the device screen width.
-    const MOBILE_DEPLOY_W = 430;
-    const MOBILE_DEPLOY_H = 860;
     const actualWsW = workspaceRef.current?.offsetWidth ?? wsDims.width;
     const actualWsH = wsDims.height;
     const dsx = MOBILE_DEPLOY_W / actualWsW;
@@ -367,7 +287,6 @@ export function MobileApp() {
     }
 
     // Build deploy payload with backend route names as page keys
-    const HOLIDAY_CODES: Record<PageKey, string> = { p1: "w1", p2: "w2", p3: "w4", p4: "w5" };
 
     function buildPagePayload(pageKey: string, pd: PageData, overrideWallpaperCode?: string) {
       const wpItem = mobileWallpaperCatalog.find((w) => w.url === pd.wallpaper)
@@ -416,7 +335,7 @@ export function MobileApp() {
         } else if (isUserUpload) {
           // User-uploaded content: include full URL for gateway resolution
           block.image = code;
-          block.contentUrl = card.contentUrl || card.contentImage || `https://demo-content.xyz-labs.xyz/tenant-content/${slug}/${code}.png`;
+          block.contentUrl = card.contentUrl || card.contentImage || `${DEMO_CONTENT_BASE}/tenant-content/${slug}/${code}.png`;
         } else if (code) {
           block.image = code;
         }
@@ -446,7 +365,7 @@ export function MobileApp() {
       slug,
       mobile: true,
       pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd)])
+        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk as PageKey] ?? pk, buildPagePayload(pk, pd)])
       ),
     };
 
@@ -455,7 +374,7 @@ export function MobileApp() {
       slug,
       mobile: true,
       pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd, HOLIDAY_CODES[pk as PageKey])])
+        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk as PageKey] ?? pk, buildPagePayload(pk, pd, HOLIDAY_WALLPAPER_CODES[pk as PageKey])])
       ),
     };
 
@@ -464,8 +383,8 @@ export function MobileApp() {
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
     setDeploying(false);
     setDeployStatus(null);
-    const primaryUrl = result.primaryUrl ?? `https://gateway.xyz-labs.xyz/${slug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `https://gateway.xyz-labs.xyz/${slug}/holiday`;
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${slug}/gate`;
+    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${slug}/holiday`;
     setDeployModal({ primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }
 
