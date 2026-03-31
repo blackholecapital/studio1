@@ -22,6 +22,12 @@ import { ensureUniqueSlug, sanitizeSlug } from "../domain/editor/actions";
 import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
 import { convertToPng } from "../shared/lib/normalize";
 
+// Service imports — side-effecting operations
+import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
+import { getOrCreateDesktopSlug } from "../services/runtime/urlState";
+import { buildDesktopDeployBundle } from "../services/deploy/buildPayload";
+import { uploadFile } from "../services/upload/api";
+
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
 
@@ -95,13 +101,7 @@ function makeDefaultPageState(wallpaper: string): { cardState: CardInteractionSt
 }
 
 export function App() {
-  const [slug, setSlug] = useState(() => {
-    const stored = localStorage.getItem("drip-studio:desktop-slug");
-    if (stored) return stored;
-    const id = Math.random().toString(36).slice(2, 10);
-    localStorage.setItem("drip-studio:desktop-slug", id);
-    return id;
-  });
+  const [slug, setSlug] = useState(getOrCreateDesktopSlug);
   const [page, setPageRaw] = useState<PageKey>("p1");
   const [activeTab, setActiveTab] = useState<SurfaceTab>("content");
   const [leftMode, setLeftMode] = useState<"create" | "gateway">("create");
@@ -146,7 +146,7 @@ export function App() {
     setLeftRailTab("wallpaper");
     setLeftMode("create");
     setActiveTab("content");
-    localStorage.setItem("ghostFlowSeen", "true");
+    markGhostFlowSeen();
   }, []);
 
   // Start ghost flow on mount
@@ -228,7 +228,7 @@ export function App() {
 
   // Dev reset
   useEffect(() => {
-    (window as any).resetGhostFlow = () => { localStorage.removeItem("ghostFlowSeen"); location.reload(); };
+    (window as any).resetGhostFlow = () => { resetGhostFlowStorage(); location.reload(); };
   }, []);
 
   // Per-page state stored in a project map
@@ -362,7 +362,7 @@ export function App() {
   function handleSlugChange(newSlug: string) {
     const sanitized = sanitizeSlug(newSlug);
     setSlug(sanitized);
-    localStorage.setItem("drip-studio:desktop-slug", sanitized);
+    saveDesktopSlug(sanitized);
 
     // Save current project first
     setProject((prev) => {
@@ -737,15 +737,9 @@ export function App() {
     try {
       // Convert to PNG via canvas (shared utility)
       const pngBlob = await convertToPng(file);
-
-      const form = new FormData();
-      form.append("file", new File([pngBlob], filename, { type: "image/png" }));
-      form.append("slug", slug);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json() as { ok: boolean };
-      if (data.ok) {
-        const remoteUrl = `${DEMO_CONTENT_BASE}/tenant-content/${slug}/${filename}`;
-        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: remoteUrl } : u));
+      const result = await uploadFile(pngBlob, filename, slug);
+      if (result.ok && result.remoteUrl) {
+        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: result.remoteUrl! } : u));
       }
     } catch {
       // Upload failure is non-fatal for studio preview; code is still set
@@ -896,108 +890,19 @@ export function App() {
       }
     };
 
-    // ── Deploy coordinate scaling ──────────────────────────────────────────
-    // Use the actual DOM workspace width so card x positions map proportionally:
-    //   deployed_x = card.x × (DEPLOY_W / actualWsW)  (no X offset needed)
-    // DEPLOY_Y_OFFSET = 10 % of DEPLOY_H (80px) clears the deployed nav bar.
-    // Bottom cards land at 95% of DEPLOY_H (760px) when bottomY ≈ 432 studio px.
+    // Build deploy payloads via service
     const actualWsW = workspaceRef.current?.offsetWidth ?? layoutConfig.workspace.width;
-    const dsx = DEPLOY_W / actualWsW;   // actual studio→deploy x scale
-    const dsy = DEPLOY_H / layoutConfig.workspace.height;
-    function scaleForDeploy(card: { x: number; y: number; w: number; h: number }) {
-      return {
-        x: Math.round(card.x * dsx) + DEPLOY_X_OFFSET,
-        y: Math.round(card.y * dsy) + DEPLOY_Y_OFFSET,
-        w: Math.round(card.w * dsx),
-        h: Math.round(card.h * dsy),
-      };
-    }
-
-    // Build page payload (codes only — no raw URLs in JSON)
-    function buildPagePayload(pageKey: string, pageData: ReturnType<typeof cardStateToPageData>, overrideWallpaperCode?: string) {
-      const wpItem = wallpaperCatalog.find((w) => w.url === pageData.wallpaper);
-      const wallpaperCode = overrideWallpaperCode ?? wpItem?.code ?? "";
-
-      // For p4 (Exclusive): only emit wallpaperCode unless the user has placed
-      // non-default content (any card with a real contentCode, skin, or exclusive flag).
-      if (pageKey === "p4") {
-        const hasUserContent = pageData.cards.some(
-          (c) => (c.contentCode && c.contentCode !== "c5555") || c.skinId || c.isExclusive
-        );
-        const activeTiles = exclusiveTiles
-          .map((tile, i) => {
-            if (!tile.url && !tile.price && !tile.locked) return null;
-            return {
-              tileNumber: i + 1,
-              contentCode: `EC-${String(i + 1).padStart(3, "0")}`,
-              tileName: `Exclusive Content-${i + 1}`,
-              lockStatus: tile.locked ? "locked" : "unlocked",
-              purchasePrice: tile.price || null,
-              contentUrl: tile.url || null
-            };
-          })
-          .filter(Boolean);
-        const payload: Record<string, unknown> = {
-          wallpaperCode,
-          viewport: { width: DEPLOY_W, height: DEPLOY_H },
-        };
-        if (hasUserContent) {
-          payload.cards = pageData.cards
-            .filter((c) => (c.contentCode && c.contentCode !== "c5555") || c.skinId || c.isExclusive)
-            .map((card) => ({
-              id: card.id, ...scaleForDeploy(card),
-              contentCode: card.contentCode ?? null,
-              skinId: card.skinId ? card.skinId.toLowerCase() : null,
-              isExclusive: card.isExclusive ?? false,
-              exclusivePrice: card.exclusivePrice ?? null
-            }));
-        }
-        if (activeTiles.length > 0) payload.exclusiveTiles = activeTiles;
-        return payload;
-      }
-
-      // p1–p3: include all cards (filtering nulls), default c9999 card is always present
-      const effectiveSlugVal = effectiveSlug;
-      const cards = pageData.cards.map((card) => {
-        const cc = card.contentCode ?? null;
-        const isUserUpload = cc && /^x\d+$/i.test(cc);
-        const base: Record<string, unknown> = {
-          id: card.id,
-          ...scaleForDeploy(card),
-          contentCode: cc,
-          skinId: card.skinId ? card.skinId.toLowerCase() : null,
-          isExclusive: card.isExclusive ?? false,
-          exclusivePrice: card.exclusivePrice ?? null
-        };
-        if (isUserUpload) {
-          base.contentUrl = card.contentUrl || card.contentImage || `${DEMO_CONTENT_BASE}/tenant-content/${effectiveSlugVal}/${cc}.png`;
-        }
-        return base;
-      });
-      return {
-        wallpaperCode,
-        cards,
-        viewport: { width: DEPLOY_W, height: DEPLOY_H },
-      };
-    }
-
-    // Map internal page keys to backend route names (from domain/project/defaults)
-
-    const mainPayload = {
-      version: 1,
-      slug: effectiveSlug,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk as PageKey] ?? pk, buildPagePayload(pk, pd)])
-      )
-    };
-
-    const holidayPayload = {
-      version: 1,
-      slug: effectiveSlug,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk as PageKey] ?? pk, buildPagePayload(pk, pd, HOLIDAY_WALLPAPER_CODES[pk as PageKey])])
-      )
-    };
+    const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(
+      effectiveSlug,
+      full.pages,
+      {
+        slug: effectiveSlug,
+        scaleParams: { actualWsW, actualWsH: layoutConfig.workspace.height },
+        wsHeight: layoutConfig.workspace.height,
+        wallpaperCatalog,
+        exclusiveTiles,
+      },
+    );
 
     // Always save locally first
     saveProject(full);
