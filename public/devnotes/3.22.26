@@ -1,0 +1,153 @@
+Here are **dev notes / worklog summary** for everything we worked through today (UI + stability + build fixes), written so you can drop it straight into a changelog / PR description.
+
+---
+
+## Dev Notes — Drip Studio UI Iteration (v2.1)
+
+### Goal
+
+Transform the studio into a **wallpaper-first “floating glass cards” editor**, tighten the Gate card editing UX, add rapid layout presets, and introduce an “Ad Slot” hanger area—while keeping modals usable and non-disruptive to the canvas.
+
+---
+
+## Major UI/UX Changes Implemented
+
+### 1) Wallpaper-first Studio Background
+
+* Studio now supports setting a **global wallpaper** (applies behind everything).
+* Removed the heavy “canvas frame / wireframe container” look so cards appear **floating** over wallpaper.
+* Updated preview behavior so **Preview modal** should use the currently selected wallpaper (when functioning correctly in the patched build).
+
+### 2) Canvas becomes a toolbar strip (not a big framed stage)
+
+* Canvas area reduced to a **header strip** that holds controls:
+
+  * Wallpaper / Templates / Images / Font / Card BG / Prototype / Preview
+  * Preset buttons (1–5) remain accessible.
+* Main rendering area shows **cards overlayed on wallpaper** instead of being confined to a framed canvas window.
+
+### 3) Templates modal redesigned into a 3-tab structure
+
+* Templates modal UI structure updated to:
+
+  * **Templates / Themes / Blocks**
+* Requirement: Tabs should live **in the modal header plane** (same row as the “Templates” title), not duplicated in the body.
+* Modal size behavior:
+
+  * should remain consistent height and use internal scrolling (avoid collapsing/shrinking when switching tabs).
+* Blocks content corrected multiple times due to drift:
+
+  * Blocks should show **template previews grouped by 1–6 blocks**, not image wallpaper tiles.
+
+### 4) Gate editor: “single card open” / fold-up behavior
+
+* Gate editor transitioned from showing multiple expanded cards to:
+
+  * **Closed:** “Card 1”
+  * **Open:** One active card editor + selector for Card 1–8 (later expanded).
+* Added mini page-tabs inside the open editor:
+
+  * Gate / VIP / Perks / Account / Socials (and Scraper in later iteration).
+
+### 5) Card selector + Text Layout presets
+
+* Added **Card selector dropdown** for Card 1–8 (tightened UI).
+* Added **Layout dropdown** with **20 text layouts** that autopopulate the 10 lines:
+
+  * examples: centered title + bullets, problem/solution/proof, checklist, pricing teaser, etc.
+* Layout selector placement evolved:
+
+  * requested final: Card selector smaller, Layout selector stacked under it, kind buttons align into one row.
+
+### 6) “Ad Slot” hanger panel
+
+* Added an “AD SLOT” placeholder intended as a **wireframe hanger** for advertising.
+* Placement/behavior changes across revisions:
+
+  * initially inside Gate area → caused UI nesting issues
+  * moved to separate panel → correct separation
+  * later moved to fixed overlay bottom-left → required z-index tuning (should not cover modals)
+* Final user requirements for Ad Slot:
+
+  * anchored **bottom-left**
+  * width nearly touches canvas toolbar edge
+  * height reduced (~⅓ smaller than earlier)
+  * **no inner wireframe**, no header text (it’s an image hanger only)
+  * must remain **behind modals** and not block template selection clicks
+
+### 7) Scraper behavior
+
+* Scraper originally as a page-tab could “lock out” navigation.
+* Requested final: Scraper should open as a **separate large modal window** so it’s not a trap state.
+
+---
+
+## Build Errors Encountered + Root Causes
+
+### A) App.tsx JSX brace errors
+
+* Multiple build failures caused by:
+
+  * stray `})}` or extra closing tags
+  * mis-nested modal wrappers (missing `modalBody` or extra `</div>`)
+  * sibling JSX nodes in ternaries without a fragment wrapper
+
+### B) AccordionCardEditor.tsx syntax crash
+
+* Crash caused by an accidental extra `)} )}` after the accordion top block.
+* Fixed by removing the stray close.
+
+### C) Expand crash (runtime) attributed to layout code scope bug
+
+* One version had `TEXT_LAYOUTS` accidentally falling into the wrong scope due to a missing `}` after `labelsFor()`.
+* This caused `Expand` to crash because layout presets were undefined / not in module scope.
+
+### D) Current build failure (latest log)
+
+* `PreviewPane.tsx:87:20 ERROR: Expected ":" but found "}"`
+* This indicates a malformed ternary or object literal in JSX near a `.map()` block in PreviewPane.
+* Needs a quick syntax fix in PreviewPane around the `lines.map(...)` / alignment rendering section.
+
+---
+
+## Behavioral Expectations Locked In (Product Intent)
+
+* Studio has a clean “work surface” feel:
+
+  * no vertical page scrolling (internal scroll only where needed: modal bodies, accordion editor body).
+* Cards float over wallpaper; canvas isn’t a bordered staging area.
+* Gate editor never expands into the Ad Slot space (accordion body should scroll instead).
+* Templates modal is stable size and scrollable.
+* Ad Slot stays behind modals and never blocks clicking templates or other UI.
+
+---
+
+## Files Touched Repeatedly (Hot Spots)
+
+* `src/ui/App.tsx`
+
+  * toolbar + modal wiring, wallpaper state, templates modal structure, ad slot placement
+* `src/ui/components/AccordionCardEditor.tsx`
+
+  * fold/open behavior, card selector, layout selector, internal mini-tabs, runtime stability
+* `src/ui/components/PreviewPane.tsx`
+
+  * floating render mode, preview behavior, alignment / line rendering (currently failing build)
+* `src/ui/styles.css`
+
+  * glass styling, modal sizing/scroll, removal of canvas borders, ad slot positioning, dark dropdown options
+
+---
+
+## Current Status
+
+* UI direction and most layout goals reached visually.
+* Remaining blocker is **a PreviewPane.tsx syntax error** preventing production build.
+* After fixing PreviewPane, final polish items are mostly CSS-level (spacing/locking boundaries), unless further runtime issues appear.
+
+---
+
+If you want, I can also format this into:
+
+* a PR description template (Summary / Changes / Testing / Known issues)
+* or a checklist for what to verify after the PreviewPane build fix.

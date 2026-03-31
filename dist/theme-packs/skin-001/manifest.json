@@ -1,0 +1,14 @@
+{
+  "skinId": "skin-001",
+  "name": "Holographic Glass",
+  "status": "active",
+  "codes": {
+    "wallpaper": "WP-001",
+    "cardSkin": "CS-001",
+    "uiTheme": "UI-001"
+  },
+  "assets": {
+    "wallpaper": "/theme-packs/skin-001/wallpapers/wp-001-holographic-cosmos.png"
+  },
+  "notes": "Default skin pack added for Drip Studio. Layout unchanged; styling only."
+}

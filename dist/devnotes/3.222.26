@@ -1,0 +1,246 @@
+Dev Notes — Drip Studio v2.1 UI/Build Fixes + UX Improvements
+1) Build break: PreviewPane.tsx JSX parse error
+
+Symptom
+
+vite build failed with: Expected ":" but found "}" at PreviewPane.tsx:87:20
+
+Root cause
+
+A JSX ternary was missing its : ... else branch inside the body ? ...map(...) block.
+
+Fix
+
+Completed ternary with : null (or replaced with safer conditional rendering).
+
+Files
+
+src/ui/components/PreviewPane.tsx
+2) Expand tab crash: Gate accordion editor kills UI
+
+Symptom
+
+Clicking “Expand” on the Gate card crashed the whole UI.
+
+Root cause
+
+AccordionCardEditor.tsx had an invalid function boundary: missing } after applyTextLayout() and an extra stray } later.
+
+Fix
+
+Restored correct braces so the component renders and event handlers don’t explode.
+
+Files
+
+src/ui/components/AccordionCardEditor.tsx
+3) Preview only showed 2 lines (Notes missing), needed all 10 lines
+
+Symptom
+
+Preview showed “What hurts today” then jumped to later lines; users expected all 10 lines visible.
+
+Fix
+
+Rendering updated so preview maps over all usable lines (up to 10) and displays them consistently.
+Kept alignment per-line (getLineAlign()).
+
+Files
+
+src/ui/components/PreviewPane.tsx
+4) Image card: image code should render actual image preview
+
+Symptom
+
+Selecting image + entering codes like A1/A2/A3 didn’t show the image in the preview.
+
+Fix
+
+Image cards now attempt to render an <img> from a known public path (stickers/images folder).
+Fallback behavior: if not found, hides the broken image.
+
+Files
+
+src/ui/components/PreviewPane.tsx
+src/ui/styles.css (preview image styling)
+
+Notes
+
+Final wiring uses public/stickers/<CODE>.png pattern (example: /stickers/ali-ai1.png).
+5) CSS build break: stray brace in styles.css
+
+Symptom
+
+vite build failed: Unexpected } around src/ui/styles.css:259
+
+Fix
+
+Removed the stray standalone } line.
+
+Files
+
+src/ui/styles.css
+6) Modal buttons “locked out” (Wallpaper/Templates/Images/Font/etc stopped opening)
+
+Symptom
+
+Header buttons appeared clickable but modals didn’t open / UI felt dead.
+
+Root cause
+
+CSS override forced .modalOverlay to position: relative and low z-index, breaking overlay behavior:
+.topBar,.body,.modalOverlay { position: relative; z-index: 1; }
+
+Fix
+
+Removed .modalOverlay from that selector so overlay stays position: fixed and clickable.
+
+Files
+
+src/ui/styles.css
+7) “Card 4” keeps reappearing under the canvas
+
+Symptom
+
+On landing, extra blank/placeholder card showed underneath main layout.
+
+Root causes (both occurred at different times)
+
+A default ad1 block was being pushed into gate blocks in store.ts.
+Layout preset blocks were returned by reference (shared objects), so later mutations persisted and “resurrected” blocks.
+
+Fixes
+
+Removed the ad1 push from default gate layout.
+Deep-cloned layout preset blocks when creating/applying layouts.
+
+Files
+
+src/core/store.ts
+8) Bottom-left ad placeholder sizing issues (must match Gate column)
+
+Symptom
+
+Ad placeholder slot width drifted beyond the Gate panel width.
+
+Fix
+
+Standardized slot width via CSS variable (final target was 520px width).
+Confirmed height is min(260px, 28vh) so it scales on shorter screens.
+
+Files
+
+src/ui/styles.css
+
+Resulting slot size
+
+Width: 520px
+Height: min(260px, 28vh) (typically 260px on desktop)
+9) “Glass window” overlay appeared after skin packs — user wanted floating cards
+
+Symptom
+
+Background looked like a glass panel behind the canvas; user wanted “cards floating over background”.
+
+Fix
+
+Removed/neutralized glass overlay styling on floating canvas container (no backdrop-filter, no panel background).
+
+Files
+
+src/ui/styles.css
+10) Templates/Blocks previews right-justified and drifting off-page
+
+Symptom
+
+Template selector grid aligned right; selecting caused drift/off-page and UI looked broken.
+
+Fix
+
+Centered preview grids using fixed tile widths and justify-content: center.
+Replaced repeat(5, minmax(0, 1fr)) behavior with repeat(auto-fit, TILE_WIDTH) to prevent stretching.
+
+Files
+
+src/ui/styles.css
+11) Font modal features: A+/A- placement + functionality regressions
+
+What was requested
+
+Remove A+/A- from inside Gate editor.
+Put font size controls in Font modal.
+Add numeric size display + slider + preview sentence.
+Add B/I/U toggles.
+Add card-number dropdown to apply styling per selected card.
+
+What we did
+
+Moved A+/A- controls out of Gate editor into Font modal.
+Added per-page and per-card style support (fontSize + text styles).
+Noted there were regressions during patch iterations where the controls disappeared; final intent restored the full feature set.
+
+Files involved across iterations
+
+src/ui/App.tsx (Font modal UI + handlers)
+src/ui/components/PreviewPane.tsx (apply styles in render)
+src/core/types.ts (style fields)
+src/ui/styles.css (modal control styling)
+12) Wallpaper catalog improvements + automated import workflow (Option A)
+
+Goal
+
+Stop manually editing wallpaperCatalog.ts every time a wallpaper is added.
+Keep wallpapers in public/wallpapers/.
+Generate stable 5-digit codes for store/checkout.
+
+Solution
+
+Added a generator script that scans public/wallpapers/ and auto-writes:
+src/core/wallpaperCatalog.ts (AUTO-GENERATED)
+public/wallpapers/WALLPAPER_CODES.txt (name → code → file)
+Hooked generator into npm run dev and npm run build.
+
+Files
+
+scripts/generate-wallpaper-catalog.mjs (new)
+package.json (adds gen:wallpapers, runs pre dev/build)
+src/core/wallpaperCatalog.ts (generated)
+public/wallpapers/WALLPAPER_CODES.txt (generated)
+
+Code rules
+
+If filename matches D#### pattern → code becomes 5-digit padded from digits.
+Else → fallback to hash5(name) stable hash.
+13) Default wallpaper location (where initial background is set)
+
+Clarified
+
+Default studio wallpaper is set in React state in:
+src/ui/App.tsx (studioWallpaper state init)
+User can override via Wallpaper modal selection afterward.
+14) Bottom-left ad slot: render a specific image asset
+
+Request
+
+Render ali-ai1.png from public/stickers/ inside bottom-left wireframe placeholder.
+
+Implementation
+
+App.tsx: ad slot now contains an <img src="/stickers/ali-ai1.png">
+CSS ensures it fills the slot nicely (object-fit: cover).
+
+Files
+
+src/ui/App.tsx
+src/ui/styles.css
+Known “gotchas” / operational notes
+Public folder assets (public/wallpapers, public/stickers) cannot be enumerated client-side; the generator approach is correct.
+CSS must never override .modalOverlay into non-fixed positioning, or all modal UX collapses again.
+Layout presets must always be cloned before use to prevent mutation bugs (phantom card reappears).
+If template grids use fr columns, they will stretch and “drift”; keep fixed tile widths + centered grid.
+Quick checklist for future changes
+✅ If a modal stops opening: search styles.css for .modalOverlay overrides.
+✅ If phantom blocks appear: ensure page.blocks isn’t pointing at preset references.
+✅ If a wallpaper is added: just drop it into public/wallpapers/, generator handles it.
+✅ If image codes change: ensure public/stickers/<CODE>.png exists or update the resolver in PreviewPane.
+
+If you want, I can also format this into a DEV_NOTES.md ready to drop into the repo (same content, tighter headings, and a “Patch history” section).

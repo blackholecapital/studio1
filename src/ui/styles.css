@@ -1,0 +1,2754 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #07111d;
+  color: rgba(245, 248, 255, 0.96);
+  --glass-fill: rgba(18, 28, 42, 0.14);
+  --glass-border: rgba(190, 224, 255, 0.18);
+  --glass-shadow: 0 16px 40px rgba(2, 8, 20, 0.18);
+  --pill-fill: rgba(21, 32, 46, 0.2);
+  --pill-active: rgba(145, 193, 255, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    linear-gradient(rgba(6, 10, 18, 0.18), rgba(6, 10, 18, 0.22)),
+    var(--studio-wallpaper, url("/placeholders/black-canvas.jpg")) center / cover fixed no-repeat;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.studioApp {
+  min-height: 100vh;
+  padding: var(--layout-page-gutter) 14%;
+  display: grid;
+  grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr) var(--layout-sidebar-width);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topStrip topStrip topStrip"
+    "leftRail workspaceShell rightRail";
+  column-gap: var(--layout-column-gutter);
+  row-gap: 6px;
+  background:
+    linear-gradient(rgba(8, 12, 20, 0.12), rgba(8, 12, 20, 0.16)),
+    var(--studio-wallpaper, url("/placeholders/black-canvas.jpg")) center / cover fixed no-repeat;
+}
+
+.glassPanel,
+.leftRail {
+  background: rgba(18, 28, 42, 0.08);
+  border: 1px solid rgba(205, 231, 255, 0.14);
+  box-shadow:
+    0 12px 32px rgba(2, 8, 20, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px) saturate(108%);
+  -webkit-backdrop-filter: blur(4px) saturate(108%);
+}
+
+.glassPanelSubtle {
+  background: rgba(14, 22, 34, 0.08);
+  border: 1px solid rgba(192, 221, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.topStrip {
+  grid-area: topStrip;
+  min-height: 52px;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 8px 18px;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  border: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.18),
+    0 0 0 3px rgba(140, 210, 255, 0.56),
+    0 0 42px rgba(110, 200, 255, 0.39);
+}
+
+.topStripLeft {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.brandMark {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 1.0rem;
+  white-space: nowrap;
+}
+
+/* ID label + input + Save — floating text style, no pill */
+.topStripIdLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(180, 225, 255, 0.6);
+  letter-spacing: 0.04em;
+}
+
+.topStripIdInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(245, 248, 255, 0.88);
+  font-size: 0.83rem;
+  width: 58px;
+  padding: 0;
+}
+
+.topStripSaveBtn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(210, 235, 255, 0.75);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.topStripSaveBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.topStripSaveBtn.isSavedState {
+  color: rgba(80, 255, 150, 0.95);
+}
+
+/* Help ? button in top strip (left of Deploy Gateway) */
+.topStripHelpWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+  z-index: 10001;
+}
+
+.topStripHelpBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(180, 225, 255, 0.65);
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.topStripHelpBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Deploy help tooltip — fixed position to escape stacking context */
+.tooltipCardDeploy {
+  position: fixed;
+  top: 60px;
+  right: 14%;
+  left: auto;
+  min-width: 240px;
+  z-index: 10002;
+}
+
+.topStripCenter {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topStripTitle {
+  font-size: 1.0rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.88;
+  padding: 0 8px;
+  /* Fixed width so arrows/buttons don't shift when cycling between short/long page names */
+  display: inline-block;
+  width: 120px;
+  text-align: center;
+}
+
+.topStripRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.walletButton {
+  justify-self: end;
+}
+
+/* Top-area buttons: match rounded-rect shape of top tile */
+.topStrip .pillButton {
+  min-height: 34px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+  border-radius: 12px;
+}
+
+/* Header strip buttons: taller to fill header row */
+.headerStrip .pillButton {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
+/* Slug pill matches all other header button heights */
+.headerStrip .slugPill {
+  min-height: 44px;
+  padding: 0 13px;
+  font-size: 0.85rem;
+  border-radius: 12px;
+}
+
+.headerStrip {
+  display: none;
+}
+
+/* Deploy status banner */
+.deployStatusBanner {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(80, 180, 255, 0.15);
+  border: 1px solid rgba(120, 200, 255, 0.3);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.deployStatusBanner.isWarning {
+  background: rgba(255, 60, 60, 0.18);
+  border-color: rgba(255, 100, 100, 0.45);
+  color: #ffb0b0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.headerStripLeft,
+.headerStripRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.floatingPills {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-floating-pill-gap);
+  flex-wrap: wrap;
+}
+
+/* Base pill shape: clear glass tint matching tile level */
+.pillButton,
+.slugPill {
+  border: 1px solid rgba(120, 200, 255, 0.38);
+  background: rgba(0, 0, 0, 0.50);
+  border-radius: 12px;
+  min-height: 48px;
+  padding: 0 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(4, 10, 18, 0.16),
+    0 0 0 2px rgba(140, 210, 255, 0.44),
+    0 0 14px rgba(110, 200, 255, 0.28);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+}
+
+/* Active / primary: same glass base, brighter border + glow only */
+.pillButton.isActive,
+.pillButton.isPrimary {
+  background: rgba(0, 0, 0, 0.50);
+  border-color: rgba(140, 210, 255, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 8px 18px rgba(4, 10, 18, 0.16),
+    0 0 0 2px rgba(140, 210, 255, 0.54),
+    0 0 16px rgba(110, 200, 255, 0.36);
+}
+
+.pillButton.danger {
+  border-color: rgba(255, 150, 170, 0.36);
+}
+
+.slugPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+
+.slugPill span {
+  opacity: 0.76;
+  font-size: 0.92rem;
+}
+
+.slugPill input {
+  background: rgba(10, 16, 26, 0.06);
+  border: 0;
+  outline: 0;
+  width: 58px;
+  font-size: inherit;
+}
+
+/* Left rail tint reduced for lighter glass */
+.leftRail {
+  grid-area: leftRail;
+  width: var(--layout-sidebar-width);
+  min-width: var(--layout-sidebar-width);
+  max-width: var(--layout-sidebar-width);
+  align-self: start;
+  height: var(--layout-workspace-height);
+  border-radius: 28px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.18),
+    0 0 0 3px rgba(140, 210, 255, 0.56),
+    0 0 42px rgba(110, 200, 255, 0.39);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  padding: 18px 18px 0 18px;
+}
+
+/* ── Left rail vertical tab list ─────────────────────────────────────────── */
+.leftRailTabList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.leftRailTabBtn {
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+  height: 34px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(210, 235, 255, 0.78);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.14s, border-color 0.14s;
+}
+
+.leftRailTabBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.leftRailTabBtn.isActive {
+  border-color: rgba(165, 211, 255, 0.45);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.leftRailTabBtn.isPageLocked {
+  border-color: rgba(80, 255, 150, 0.55);
+  color: rgba(120, 255, 180, 0.95);
+}
+
+.gatewayPagePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+/* Collapsible header button in left rail (collapsed tab/page indicator) */
+.leftRailTabBtnHeader {
+  flex: 1;
+  font-size: 0.8rem;
+}
+
+/* Row wrapping the collapsed tab header + optional + button */
+.leftRailTabBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* + button in header strip (larger to match header height) */
+.headerStripCenter .railAddBtn {
+  width: 34px;
+  height: 34px;
+  font-size: 1.25rem;
+  box-shadow: 0 0 0 2px rgba(140, 210, 255, 0.44), 0 0 10px rgba(110, 200, 255, 0.28);
+}
+
+/* Small + button shown on the right of exclusive/media tab header */
+.railAddBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(100, 200, 255, 0.45);
+  background: rgba(60, 160, 255, 0.18);
+  color: rgba(180, 225, 255, 0.9);
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.railAddBtn:hover {
+  background: rgba(60, 160, 255, 0.32);
+  border-color: rgba(100, 200, 255, 0.7);
+}
+
+/* Global wallpaper lock button in wallpaper tab header */
+.wallpaperGlobalLockBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 80, 80, 0.5);
+  background: rgba(255, 70, 70, 0.18);
+  color: rgba(255, 150, 150, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.wallpaperGlobalLockBtn:hover {
+  background: rgba(255, 70, 70, 0.32);
+  border-color: rgba(255, 100, 100, 0.7);
+}
+
+.wallpaperGlobalLockBtn.isLocked {
+  border-color: rgba(60, 220, 130, 0.65);
+  background: rgba(40, 200, 110, 0.22);
+  color: rgba(100, 240, 170, 0.95);
+}
+
+.wallpaperGlobalLockBtn.isLocked:hover {
+  background: rgba(40, 200, 110, 0.36);
+  border-color: rgba(60, 220, 130, 0.85);
+}
+
+/* Row wrapping a portal page button + its lock icon */
+.leftRailPageRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Page name button takes all available width */
+.leftRailTabBtnFlex {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Wallpaper hint bubble shown below the wallpaper tab header */
+.wallpaperHintBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: rgba(30, 50, 80, 0.45);
+  border: 1px solid rgba(120, 190, 255, 0.2);
+  font-size: 0.72rem;
+  opacity: 0.82;
+  line-height: 1.45;
+  color: rgba(190, 220, 255, 0.88);
+}
+
+.wallpaperHintRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Workspace dark tint overlay */
+.workspaceTint {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* ── Exclusive content lock overlay ──────────────────────────────────────── */
+.exclusiveLockOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.exclusiveLockLabel {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.exclusivePriceTag {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(120, 220, 255, 0.95);
+}
+
+/* ── Exclusive price input in left rail ──────────────────────────────────── */
+.exclusivePriceInput {
+  border: 1px solid rgba(196, 225, 255, 0.18);
+  background: rgba(10, 16, 26, 0.3);
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: inherit;
+  outline: none;
+  width: 100%;
+}
+
+.exclusivePriceInput::placeholder { opacity: 0.5; }
+
+/* ── Gateway info card (XYZ Labs sticker) ──────────────────────────────── */
+.gatewayInfoCard {
+  flex-shrink: 0;
+  height: 168px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.gatewayInfoCardBottom {
+  margin-top: auto;
+  margin-bottom: 14px;
+}
+
+.gatewayInfoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Gateway deployed-view preview ────────────────────────────────────────── */
+/* Frame extends to full sidebar width (175 px) via negative side margins      */
+.gatewayPreviewSection {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  margin-left: -18px;
+  margin-right: -18px;
+}
+
+.gatewayPreviewTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0.6;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.gatewayPreviewFrame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+  border: 1px solid rgba(200, 225, 255, 0.14);
+  flex-shrink: 0;
+}
+
+/* Dark band representing the deployed nav bar (top ~10 % of canvas) */
+.gatewayPreviewNavBand {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(6, 10, 18, 0.72);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.gatewayPreviewCard {
+  position: absolute;
+  background: rgba(20, 30, 45, 0.65);
+  border: 1px solid rgba(200, 225, 255, 0.18);
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.gatewayPreviewExclusive {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.railScrollRegion {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+
+.railScrollRegion::-webkit-scrollbar {
+  width: 4px;
+}
+.railScrollRegion::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 4px;
+}
+.railScrollRegion::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Wallpaper tray grid */
+.wallpaperTray {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.wallpaperThumb {
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(193, 226, 255, 0.18);
+  background: rgba(255, 255, 255, 0.02);
+  aspect-ratio: 1 / 1;
+}
+
+.wallpaperThumb.isActive {
+  border-color: rgba(171, 218, 255, 0.44);
+  box-shadow: 0 0 0 1px rgba(171, 218, 255, 0.15);
+}
+
+.wallpaperThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Content tray – same grid as wallpaper */
+.contentTray {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.contentThumb {
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: transparent;
+  aspect-ratio: 1 / 1;
+  cursor: grab;
+}
+
+.contentThumb:active {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+
+.contentThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.mediaTray {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 2px;
+}
+
+.mediaTile {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 10px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mediaPreview {
+  min-height: 124px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+
+.mediaPreviewLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+  display: block;
+  border-radius: 14px;
+}
+
+.mediaUrlField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.mediaUrlField input {
+  border-radius: 10px;
+  border: 1px solid rgba(193, 226, 255, 0.22);
+  background: rgba(7, 13, 21, 0.5);
+  min-height: 34px;
+  padding: 6px 10px;
+}
+
+.mediaPrNote {
+  margin: 2px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: rgba(255, 186, 123, 0.95);
+}
+
+/* Card action buttons at top of left rail */
+.cardActionButtons {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.addCardButton {
+  width: 100%;
+  min-height: 38px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: rgba(90, 220, 130, 0.38);
+  background: rgba(35, 180, 90, 0.2);
+}
+
+.addCardButton:hover:not(:disabled) {
+  background: rgba(35, 180, 90, 0.3);
+  border-color: rgba(110, 245, 160, 0.52);
+}
+
+.deleteCardButton {
+  width: 100%;
+  min-height: 34px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: rgba(255, 120, 120, 0.32);
+  background: rgba(255, 60, 60, 0.12);
+}
+
+.deleteCardButton:hover:not(:disabled) {
+  background: rgba(255, 60, 60, 0.22);
+  border-color: rgba(255, 120, 120, 0.5);
+}
+
+.deleteCardButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.instructionsEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.instructionsEditor textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 12px;
+  border: 1px solid rgba(193, 226, 255, 0.2);
+  padding: 8px 10px;
+  background: rgba(7, 13, 21, 0.5);
+  resize: vertical;
+}
+
+/* Fixed ad space card at bottom of left rail */
+.adSpaceCard {
+  flex-shrink: 0;
+  margin-top: 12px;
+  min-height: 180px;
+  border: 1px solid rgba(192, 221, 255, 0.22);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(14, 22, 34, 0.12);
+}
+
+.cubePanel {
+  margin-top: 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cubeButtons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cubeButton {
+  min-height: 52px;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+}
+
+.cubeDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid rgba(193, 226, 255, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cubeButtonOne {
+  grid-template-columns: 1fr;
+}
+
+.cubeButtonTwo {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cubeButtonThree {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cubeButtonThree .cubeDot:nth-child(3) {
+  grid-column: 1;
+}
+
+.cubeButtonFour {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ── Cube layout buttons in header strip ─────────────────────────────────── */
+.cubeButtonsHeader {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 38px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.cubeButtonHeader {
+  min-height: 38px !important;
+  height: 38px;
+  width: 40px;
+  padding: 5px;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 8px;
+}
+
+.cubeButtonHeader:hover {
+  background: rgba(140, 210, 255, 0.08) !important;
+}
+
+.cubeButtonHeader .cubeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.cardTabsPanel {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+
+.cardTabsList {
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: none;
+}
+
+.cardTabsList::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.cardTabItem {
+  border: 1px solid rgba(193, 226, 255, 0.2);
+  background: rgba(8, 16, 28, 0.28);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.cardTabItem.isActive {
+  border-color: rgba(170, 220, 255, 0.42);
+}
+
+.cardTabHeader {
+  font-size: 0.78rem;
+  opacity: 0.92;
+}
+
+.adSpaceLabel {
+  opacity: 0.36;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.adSpaceHint {
+  opacity: 0.28;
+  font-size: 0.75rem;
+}
+
+.adSpaceImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.5;
+}
+
+/* Sidebar hint */
+.sidebarHint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebarHint span {
+  opacity: 0.88;
+  font-size: 0.95rem;
+}
+
+/* Content image dropped onto card */
+.cardContentImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 27px;
+  pointer-events: none;
+  animation: cardContentDropIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Default landing image (c5555) — transparent so wallpaper shows through */
+.cardContentImage.isDefaultImage {
+  opacity: 0.5;
+}
+
+@keyframes cardContentDropIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.workspaceShell {
+  grid-area: workspaceShell;
+  width: 100%;
+  min-width: 0;
+  align-self: start;
+  position: relative;
+  border-radius: 30px;
+  height: var(--layout-workspace-height);
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.18),
+    0 0 0 3px rgba(140, 210, 255, 0.56),
+    0 0 42px rgba(110, 200, 255, 0.39);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.workspaceShell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(rgba(204, 230, 255, 0.27) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(204, 230, 255, 0.27) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
+.workspaceShell::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 22px;
+  border: 1px solid rgba(222, 240, 255, 0.12);
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.workspaceQuickControls {
+  position: absolute;
+  top: 10px;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspaceQuickControlsLeft {
+  left: 10px;
+}
+
+.workspaceQuickControlsRight {
+  right: 10px;
+}
+
+.workspaceQuickBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 220, 255, 0.48);
+  background: rgba(6, 12, 24, 0.55);
+  color: rgba(235, 246, 255, 0.94);
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.workspaceQuickBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.workspaceQuickBtnAdd {
+  color: #67f18f;
+}
+
+.workspaceQuickBtnDelete {
+  color: #ff6767;
+}
+
+.floatingCard {
+  position: absolute;
+  z-index: 1;
+  border-radius: 28px;
+  border: 1px solid rgba(45, 205, 110, 0.40);
+  background: rgba(0, 0, 0, 0.11);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(5, 12, 24, 0.06),
+    0 0 0 1px rgba(45, 205, 110, 0.22),
+    0 0 16px rgba(45, 205, 110, 0.20);
+}
+
+.floatingCard.isSelected {
+  border-color: rgba(186, 229, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(150, 220, 255, 0.22),
+    0 0 28px rgba(120, 210, 255, 0.34);
+}
+
+.floatingCard.isPositionLocked {
+  border-color: rgba(255, 55, 55, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 10px 24px rgba(5, 12, 24, 0.06),
+    0 0 0 1px rgba(255, 55, 55, 0.28),
+    0 0 16px rgba(255, 55, 55, 0.28);
+}
+
+.floatingCard.isPageLocked {
+  cursor: default;
+  border-color: rgba(80, 255, 150, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 0 1px rgba(80, 255, 150, 0.12);
+}
+
+.floatingCard.isOverlapping {
+  border-color: rgba(255, 80, 80, 0.72);
+  background: rgba(255, 40, 40, 0.18);
+  box-shadow:
+    inset 0 0 40px rgba(255, 40, 40, 0.15),
+    0 0 0 2px rgba(255, 60, 60, 0.25);
+}
+
+.cardInstructions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 22px 44px;
+  text-align: left;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cardInstructions p {
+  margin: 0;
+  width: min(420px, 100%);
+  font-size: 0.94rem;
+  opacity: 0.72;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardUrlPreview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 22px;
+  text-align: left;
+}
+
+.cardUrlPreview span {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cardUrlPreview p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-break: break-all;
+  opacity: 0.9;
+}
+
+.resizeHandle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid rgba(20, 24, 30, 0.35);
+  background: rgba(45, 205, 110, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 10px rgba(45, 205, 110, 0.55);
+  cursor: nwse-resize;
+  flex-shrink: 0;
+}
+
+/* When resize handle lives inside flex row — static, not absolute */
+.cardBottomRightBtns .resizeHandle {
+  position: static;
+}
+
+.cardSizeBadge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(9, 13, 24, 0.76);
+  color: #eef2ff;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.resizeHandle.isLocked {
+  background: rgba(255, 55, 55, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 10px rgba(255, 55, 55, 0.55);
+  cursor: default;
+}
+
+/* Green state for page-locked buttons */
+.pillButton.isPageLocked {
+  background: transparent;
+  border-color: rgba(80, 255, 150, 0.55);
+  color: rgba(120, 255, 180, 0.95);
+  box-shadow: none;
+}
+
+/* Wallpaper drag-preview ghost overlay */
+.wallpaperPreviewOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 29px;
+  pointer-events: none;
+  opacity: 1;
+  background-size: cover;
+  background-position: center;
+  transition: opacity 0.15s ease;
+}
+
+.workspaceShell.isDragOver .wallpaperPreviewOverlay {
+  opacity: 1;
+}
+
+.workspaceActions {
+  margin-top: auto;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: auto;
+  position: relative;
+  z-index: 9999;
+}
+
+.workspaceUrlDragPreview {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  max-width: min(65%, 520px);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(180, 220, 255, 0.35);
+  background: rgba(8, 16, 26, 0.72);
+}
+
+.workspaceUrlDragPreview span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.workspaceUrlDragPreview p {
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.rightRail {
+  grid-area: rightRail;
+  width: var(--layout-sidebar-width);
+  min-width: var(--layout-sidebar-width);
+  max-width: var(--layout-sidebar-width);
+  align-self: start;
+  height: var(--layout-workspace-height);
+  border-radius: 28px;
+  padding: 18px 18px 0 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.18),
+    0 0 0 3px rgba(140, 210, 255, 0.56),
+    0 0 42px rgba(110, 200, 255, 0.39);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+.rightRailAdSection {
+  display: none;
+}
+
+.rightRailLogoSection {
+  margin-top: auto;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  height: 168px;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.rightRailLogoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Right rail buttons: floating text, no pill */
+.rightRail .pillButton,
+.rightRail .mediaTile .pillButton {
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: rgba(210, 235, 255, 0.78);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.rightRail .pillButton:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 1200px) {
+  .studioApp {
+    grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr);
+    grid-template-areas:
+      "topStrip topStrip"
+      "leftRail workspaceShell";
+  }
+
+  .rightRail {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .studioApp {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topStrip"
+      "leftRail"
+      "workspaceShell";
+  }
+
+  .leftRail {
+    min-height: 0;
+  }
+
+  .topStrip {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .walletButton {
+    justify-self: center;
+  }
+}
+
+/* ── Workspace bottom buttons: match top-row pill size ── */
+.workspaceActions .pillButton {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+}
+
+/* ── Header top row: tighten button spacing ── */
+.headerStripLeft {
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.headerStripRight {
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.headerStripLeft .floatingPills {
+  gap: 8px;
+}
+
+/* ── Tab cycler button (Content / Exclusive / Media / Skins) ── */
+/* Width locked to the widest label ("Exclusive +") */
+.tabCyclerBtn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative;
+  gap: 5px;
+  padding: 0 36px 0 14px !important;
+  white-space: nowrap;
+  min-width: 128px;
+  width: 128px;
+}
+
+.tabCyclerPlus {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Create/Pages toggle button: slightly wider ── */
+.headerStripCreateBtn {
+  min-width: 128px;
+}
+
+/* ── Combined ID + Save pill ── */
+.idSavePill {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  min-width: 172px;
+  border-radius: 12px;
+  background: rgba(21, 32, 46, 0.55);
+  border: 1px solid rgba(140, 210, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(140, 210, 255, 0.44), 0 0 14px rgba(110, 200, 255, 0.28);
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.idSavePillLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 13px;
+  color: rgba(180, 225, 255, 0.75);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.idSavePillLabel input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(245, 248, 255, 0.92);
+  font-size: 0.83rem;
+  width: 52px;
+  padding: 0;
+}
+
+.idSavePillSave {
+  height: 100%;
+  padding: 0 14px;
+  border: none;
+  border-left: 1px solid rgba(140, 210, 255, 0.22);
+  background: rgba(140, 210, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: 0 12px 12px 0;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.idSavePillSave:hover {
+  background: rgba(140, 210, 255, 0.18);
+}
+
+.idSavePillSave.isSavedState {
+  background: rgba(80, 200, 130, 0.28);
+  border-left-color: rgba(80, 220, 130, 0.35);
+}
+
+.idSavePillSave.allLockedGlow {
+  background: rgba(80, 200, 130, 0.22);
+}
+
+/* ── Header strip center: page nav pill + Pages ── */
+.headerStripCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+
+.pageNavPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 14px;
+  width: auto;
+  min-width: 0;
+  justify-content: space-between;
+}
+
+.pageNavArrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageNavArrowBtn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: rgba(210, 235, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: color 0.14s, background 0.14s;
+  line-height: 1;
+}
+
+.pageNavArrowBtn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 1);
+  background: rgba(140, 200, 255, 0.12);
+}
+
+.pageNavArrowBtn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+/* Logo placeholder — reserved space between arrows and +/- for future brand mark */
+.pageNavLogoSpace {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.pageNavCardBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageNavCardBtn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: rgba(210, 235, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: color 0.14s, background 0.14s;
+  line-height: 1;
+}
+
+.pageNavCardBtn:hover:not(:disabled) {
+  background: rgba(140, 200, 255, 0.12);
+}
+
+.pageNavCardBtnAdd:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 1);
+}
+
+.pageNavCardBtnDelete:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 1);
+}
+
+.pageNavCardBtnAdd {
+  color: rgba(210, 235, 255, 0.85);
+}
+
+.pageNavCardBtnDelete {
+  color: rgba(210, 235, 255, 0.85);
+}
+
+.pageNavCardBtn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+/* ── Instructions card image: 60% opacity, full cover ── */
+.cardContentImage.isInstructionsImage {
+  opacity: 0.6;
+}
+
+/* ── Media preview logo: full tile, 50% opacity ── */
+.mediaPreviewLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  opacity: 0.5;
+  display: block;
+}
+
+/* ── Skin tray ── */
+.skinTray {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.skinThumb {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+}
+
+.skinThumb:active {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+.skinThumb img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.skinThumbLabel {
+  padding: 5px 8px;
+  font-size: 0.74rem;
+  text-align: center;
+  opacity: 0.78;
+  letter-spacing: 0.04em;
+}
+
+/* ── Card skin overlay base ── */
+.cardSkin {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Skin S1 — Rainbow liquid ── */
+.skin-s1 {
+  position: absolute;
+  inset: 5%;
+  pointer-events: none;
+  border-radius: 26px;
+  padding: 14px;
+  background:
+    linear-gradient(#0000, #0000) padding-box,
+    conic-gradient(
+      from 0deg,
+      #ff4fd8, #7a5cff, #40c9ff, #47ffb3, #fff06a, #ff9b4a, #ff4fd8
+    ) border-box;
+  border: 10px solid transparent;
+  box-shadow:
+    0 0 18px rgba(255,255,255,.22),
+    0 0 34px rgba(113,220,255,.28),
+    0 0 48px rgba(255,88,190,.22);
+  filter: saturate(1.2);
+  animation: s1Shift 8s linear infinite;
+}
+.skin-s1::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,.08)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: .85;
+}
+@keyframes s1Shift {
+  0%   { filter: hue-rotate(0deg) saturate(1.2); }
+  100% { filter: hue-rotate(360deg) saturate(1.2); }
+}
+
+/* ── Skin S2 — Steel / welded rivet ── */
+.skin-s2 {
+  position: absolute;
+  inset: 5%;
+  pointer-events: none;
+  border-radius: 16px;
+  border: 12px solid #707070;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.16)) padding-box,
+    linear-gradient(180deg, #8e8e8e, #585858 35%, #9b9b9b 50%, #434343 75%, #b0b0b0) border-box;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.10),
+    inset 0 0 18px rgba(0,0,0,.38),
+    0 4px 16px rgba(0,0,0,.35);
+}
+.skin-s2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 18px 18px, #d9d9d9 0 3px, #6a6a6a 4px 8px, transparent 9px),
+    radial-gradient(circle at calc(100% - 18px) 18px, #d9d9d9 0 3px, #6a6a6a 4px 8px, transparent 9px),
+    radial-gradient(circle at 18px calc(100% - 18px), #d9d9d9 0 3px, #6a6a6a 4px 8px, transparent 9px),
+    radial-gradient(circle at calc(100% - 18px) calc(100% - 18px), #d9d9d9 0 3px, #6a6a6a 4px 8px, transparent 9px);
+}
+.skin-s2::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.14);
+}
+
+/* ── Skin S3 — Flame frame ── */
+.skin-s3 {
+  position: absolute;
+  inset: 5%;
+  pointer-events: none;
+  border-radius: 18px;
+}
+.skin-s3::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 14px;
+  background:
+    linear-gradient(#0000, #0000) padding-box,
+    linear-gradient(90deg, #ffcf33, #ff7b00, #ff3b00, #ffd35a, #ff7b00) border-box;
+  border: 10px solid transparent;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  filter: drop-shadow(0 0 12px rgba(255,140,0,.8)) drop-shadow(0 0 24px rgba(255,69,0,.55));
+}
+.skin-s3::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 8% 100%, rgba(255,230,120,.95) 0 8px, transparent 9px),
+    radial-gradient(circle at 16% 0%, rgba(255,120,20,.9) 0 10px, transparent 11px),
+    radial-gradient(circle at 28% 100%, rgba(255,180,50,.9) 0 9px, transparent 10px),
+    radial-gradient(circle at 40% 0%, rgba(255,90,0,.9) 0 12px, transparent 13px),
+    radial-gradient(circle at 58% 100%, rgba(255,220,120,.9) 0 10px, transparent 11px),
+    radial-gradient(circle at 73% 0%, rgba(255,110,20,.9) 0 12px, transparent 13px),
+    radial-gradient(circle at 88% 100%, rgba(255,200,90,.9) 0 9px, transparent 10px);
+  filter: blur(4px);
+  animation: s3Flicker .18s infinite alternate;
+}
+@keyframes s3Flicker {
+  from { transform: translateY(0px) scaleY(1); opacity: .92; }
+  to   { transform: translateY(-1px) scaleY(1.03); opacity: 1; }
+}
+
+/* ── Skin S4 — Corporate minimalist ── */
+.skin-s4 {
+  position: absolute;
+  inset: 5%;
+  pointer-events: none;
+  border-radius: 10px;
+  background:
+    linear-gradient(#0000, #0000) padding-box,
+    linear-gradient(145deg, #2a2a2a, #0f0f10 45%, #3a3a3d 60%, #111214) border-box;
+  border: 8px solid transparent;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.06),
+    inset 0 10px 20px rgba(255,255,255,.03),
+    inset 0 -12px 18px rgba(0,0,0,.28),
+    0 10px 24px rgba(0,0,0,.24);
+}
+.skin-s4::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.45);
+}
+
+/* ── On-card lock controls ── */
+.cardTopLeftControls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.cardControlLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(200, 225, 255, 0.65);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.cardLockBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  padding: 0;
+}
+
+.cardLockBtn.isUnlocked {
+  background: rgba(45, 205, 110, 0.92);
+  border-color: rgba(80, 255, 150, 0.55);
+  color: #fff;
+  box-shadow: 0 0 7px rgba(50, 210, 110, 0.5);
+}
+
+.cardLockBtn.isLocked {
+  background: rgba(255, 55, 55, 0.88);
+  border-color: rgba(255, 100, 100, 0.55);
+  color: #fff;
+  box-shadow: 0 0 7px rgba(255, 55, 55, 0.5);
+}
+
+.cardLockBtn:hover.isUnlocked {
+  background: rgba(55, 220, 120, 1);
+  box-shadow: 0 0 12px rgba(50, 210, 110, 0.7);
+}
+
+.cardLockBtn:hover.isLocked {
+  background: rgba(255, 70, 70, 1);
+  box-shadow: 0 0 12px rgba(255, 55, 55, 0.7);
+}
+
+.cardBottomRightControls {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 3;
+}
+
+.cardLockSizeLabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(200, 225, 255, 0.65);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.cardBottomRightBtns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Save / Deploy visual feedback ── */
+.pillButton.isSavedState {
+  background: rgba(35, 200, 100, 0.72);
+  border-color: rgba(80, 255, 150, 0.85);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 14px rgba(70, 220, 130, 0.35);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+/* Bright green ring on Save when all portals are locked */
+.pillButton.allLockedGlow {
+  box-shadow:
+    0 0 0 2px rgba(50, 230, 130, 0.85),
+    0 0 18px rgba(50, 230, 130, 0.65),
+    0 0 38px rgba(40, 210, 110, 0.35);
+  border-color: rgba(80, 255, 150, 0.8);
+  animation: allLockedPulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes allLockedPulse {
+  from {
+    box-shadow:
+      0 0 0 2px rgba(50, 230, 130, 0.7),
+      0 0 14px rgba(50, 230, 130, 0.5),
+      0 0 28px rgba(40, 210, 110, 0.25);
+  }
+  to {
+    box-shadow:
+      0 0 0 3px rgba(50, 230, 130, 1),
+      0 0 24px rgba(50, 230, 130, 0.85),
+      0 0 52px rgba(40, 210, 110, 0.5);
+  }
+}
+
+.pillButton.isPrimary.isReadyToDeploy {
+  border-color: rgba(80, 255, 150, 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 2px rgba(55, 220, 125, 0.65),
+    0 0 22px rgba(55, 220, 125, 0.50),
+    0 0 44px rgba(40, 195, 105, 0.28);
+  animation: deployGlow 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes deployGlow {
+  from { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 0 2px rgba(55,220,125,.55), 0 0 18px rgba(55,220,125,.40), 0 0 36px rgba(40,195,105,.22); }
+  to   { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 0 3px rgba(55,220,125,.80), 0 0 30px rgba(55,220,125,.65), 0 0 55px rgba(40,195,105,.40); }
+}
+
+/* ── Deploy modal ── */
+.deployModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 18, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.deployModalCard {
+  position: relative;
+  width: 500px;
+  max-width: 92vw;
+  padding: 36px 40px 32px;
+  border-radius: 24px;
+  background: rgba(10, 16, 30, 0.88);
+  border: 1px solid rgba(100, 200, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 0 1px rgba(80, 185, 255, 0.20),
+    0 0 60px rgba(80, 185, 255, 0.18),
+    0 28px 56px rgba(0, 0, 0, 0.5);
+  color: #e8f2ff;
+}
+
+.deployModalTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+  color: #c8e8ff;
+}
+
+.deployModalSubtitle {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  margin: 0 0 24px;
+  letter-spacing: 0.04em;
+}
+
+.deployModalUrls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.deployModalUrlRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deployModalUrlLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(120, 200, 255, 0.7);
+}
+
+.deployModalUrlValue {
+  font-size: 0.9rem;
+  font-family: monospace;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(100, 190, 255, 0.2);
+  color: #a8d8ff;
+  word-break: break-all;
+  cursor: text;
+  user-select: all;
+}
+
+.deployModalClose {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: rgba(200, 220, 255, 0.55);
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+
+.deployModalClose:hover {
+  color: rgba(200, 220, 255, 0.9);
+}
+
+/* ── Deploy modal: updated URL box with link + copy ── */
+.deployModalTitle {
+  text-align: center;
+}
+
+.deployModalUrlBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(100, 190, 255, 0.2);
+}
+
+.deployModalUrlLink {
+  flex: 1;
+  font-size: 0.88rem;
+  font-family: monospace;
+  color: #a8d8ff;
+  text-decoration: none;
+  word-break: break-all;
+  overflow: hidden;
+}
+
+.deployModalUrlLink:hover {
+  text-decoration: underline;
+  color: #cce8ff;
+}
+
+.deployModalCopyBtn {
+  flex-shrink: 0;
+  background: rgba(100, 180, 255, 0.12);
+  border: 1px solid rgba(100, 190, 255, 0.3);
+  border-radius: 7px;
+  color: rgba(180, 220, 255, 0.8);
+  width: 30px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+}
+
+.deployModalCopyBtn:hover {
+  background: rgba(100, 180, 255, 0.24);
+  color: #cce8ff;
+}
+
+.deployModalExpire {
+  text-align: center;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin-top: 16px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Exclusive rail tile ── */
+.exclusiveRailTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exclusiveRailTileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.exclusiveRailTileNum {
+  font-size: 0.72rem;
+  opacity: 0.7;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+/* ── Exclusive workspace (p4) ── */
+.exclusiveWorkspace {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 14px;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.exclusiveWorkspaceHeader {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.exclusiveWorkspaceTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  margin-bottom: 5px;
+}
+
+.exclusiveWorkspaceDesc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
+
+.exclusiveWorkspaceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  flex: 1;
+}
+
+.exclusiveWorkspaceTile {
+  display: flex;
+  flex-direction: column;
+  background: rgba(8, 14, 26, 0.50);
+  border: 1px solid rgba(120, 190, 255, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  min-height: 220px;
+}
+
+.exclusiveTilePlaceholderLabel {
+  font-size: 0.66rem;
+  color: rgba(200, 220, 255, 0.45);
+  padding: 7px 10px 4px;
+  letter-spacing: 0.02em;
+}
+
+.exclusiveTileImageArea {
+  flex: 1;
+  position: relative;
+  min-height: 60px;
+}
+
+.exclusiveTileImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.exclusiveTileCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(120, 190, 255, 0.1);
+}
+
+.exclusiveTileLockBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s, transform 0.12s;
+}
+
+.exclusiveTileLockBtn.isLocked {
+  color: rgb(255, 55, 55);
+  filter: drop-shadow(0 0 6px rgba(255, 55, 55, 0.55));
+}
+
+.exclusiveTileLockBtn.isUnlocked {
+  color: rgb(45, 205, 110);
+  filter: drop-shadow(0 0 6px rgba(45, 205, 110, 0.55));
+}
+
+.exclusiveTileLockBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.exclusiveTilePriceInput:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.exclusiveTileLockBtn:not(:disabled):hover {
+  transform: scale(1.12);
+}
+
+.exclusiveTilePriceRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.exclusiveTilePriceLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.exclusiveTilePriceLabel.isFree {
+  color: rgba(80, 220, 140, 0.85);
+}
+
+.exclusiveTilePriceLabel.isPaid {
+  color: rgba(255, 120, 120, 0.85);
+}
+
+/* Gray out price input for free tiles */
+.exclusiveTilePriceInput.isFree {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.exclusiveTilePriceInput {
+  width: 100%;
+  max-width: 120px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(120, 190, 255, 0.2);
+  border-radius: 6px;
+  height: 24px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  color: rgba(200, 235, 255, 0.9);
+  text-align: center;
+  outline: none;
+}
+
+.exclusiveTilePriceInput::placeholder {
+  opacity: 0.45;
+}
+
+.exclusiveTileTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200, 225, 255, 0.65);
+  padding: 5px 10px 8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+/* ── Content thumb upload indicator ── */
+.contentThumbUploaded {
+  outline: 1px solid rgba(80, 210, 130, 0.5);
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── Rail Header (cycling label + ? help)                                ── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.railHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.railHeaderBtn {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(210, 235, 255, 0.78);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.15s;
+  /* Fixed width so ? doesn't shift when label changes (Exclusive is widest) */
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.railHeaderBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.railHelpBtn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(180, 225, 255, 0.65);
+  font-size: 1.35rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s;
+  /* Shift left for visual balance */
+  margin-left: -30px;
+  margin-right: auto;
+}
+
+.railHelpBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── Tooltip Card                                                        ── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.tooltipCard {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(10, 18, 32, 0.92);
+  border: 1px solid rgba(140, 210, 255, 0.30);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(100, 190, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: tooltipFadeIn 0.15s ease;
+}
+
+.tooltipLine {
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: rgba(190, 225, 255, 0.88);
+  padding-left: 10px;
+  position: relative;
+}
+
+.tooltipLine::before {
+  content: "\2022";
+  position: absolute;
+  left: 0;
+  color: rgba(140, 210, 255, 0.6);
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── Card Help Icon (first tile ? indicator)                             ── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.cardHelpIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.cardHelpQuestion {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(140, 210, 255, 0.45);
+  background: rgba(21, 32, 46, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: rgba(180, 225, 255, 0.85);
+  box-shadow:
+    0 0 20px rgba(110, 200, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.cardHelpHint {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(180, 225, 255, 0.6);
+  letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── Top Strip page nav buttons (moved from header strip)                ── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.topStrip .pageNavArrowBtn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: rgba(210, 235, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: color 0.14s, background 0.14s;
+  line-height: 1;
+}
+
+.topStrip .pageNavArrowBtn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 1);
+  background: rgba(140, 200, 255, 0.12);
+}
+
+.topStrip .pageNavArrowBtn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.topStrip .pageNavCardBtn {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: rgba(210, 235, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: color 0.14s, background 0.14s;
+  line-height: 1;
+}
+
+.topStrip .pageNavCardBtn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 1);
+  background: rgba(140, 200, 255, 0.12);
+}
+
+.topStrip .pageNavCardBtn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── Ghost Flow (first-time user onboarding)                             ── */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.ghostOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  pointer-events: auto;
+}
+
+.ghostDim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  transition: opacity 0.3s ease;
+}
+
+/* ── Ghost labels (floating text near rails / top) ── */
+.ghostLabel {
+  position: absolute;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: rgba(10, 18, 32, 0.88);
+  border: 1px solid rgba(140, 210, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(200, 230, 255, 0.92);
+  z-index: 20001;
+  animation: ghostFadeIn 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ghostLabelSub {
+  font-size: 0.76rem;
+  font-weight: 500;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.ghostLabelLeft {
+  top: 16%;
+  left: 3%;
+}
+
+.ghostLabelRight {
+  top: 22%;
+  right: 3%;
+}
+
+.ghostLabelDeploy {
+  top: 58px;
+  right: 4%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+  max-width: 200px;
+}
+
+.ghostLabelDeploy div {
+  line-height: 1.7;
+}
+
+/* ── Finger SVG ── */
+.ghostFingerSvg {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+}
+
+/* ── Absolute-positioned finger (pointing at actual UI) ── */
+.ghostFingerAbs {
+  position: absolute;
+  z-index: 20002;
+  pointer-events: none;
+}
+
+/* Step 1: finger taps on a wallpaper thumbnail (left rail, ~2nd row) */
+.ghostFingerWallpaper {
+  top: 28%;
+  left: 14%;
+  animation: fingerTap 0.8s ease-in-out infinite;
+}
+
+/* Step 2: finger taps the Wallpaper/Pages rail button (on the button text) */
+.ghostFingerRailBtn {
+  top: 12.5%;
+  left: 18%;
+  animation: fingerTap 0.6s ease-in-out infinite;
+}
+
+/* Step 4: finger taps Content button on right rail (lands on button text) */
+.ghostFingerRightRailBtn {
+  top: 12.5%;
+  right: 16%;
+  animation: fingerTap 0.6s ease-in-out infinite;
+}
+
+/* Step 5: finger points at SAVE then slides to Deploy Gateway */
+.ghostFingerSave {
+  top: 36px;
+  right: 22%;
+  animation: fingerSaveDeploy 3s ease-in-out infinite;
+}
+
+/* ── Step 2: drag composite — finger + ghost tile moving together ── */
+.ghostDragComposite {
+  position: absolute;
+  z-index: 20002;
+  pointer-events: none;
+  /* Start position: over right rail content area */
+  top: 35%;
+  right: 6%;
+  animation: ghostDragMove 2.2s ease-in-out infinite;
+}
+
+.ghostTileImg {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid rgba(140, 210, 255, 0.45);
+  box-shadow: 0 0 18px rgba(100, 180, 255, 0.25);
+  pointer-events: none;
+}
+
+.ghostFingerDrag {
+  position: absolute;
+  bottom: -18px;
+  right: -14px;
+}
+
+@keyframes ghostDragMove {
+  0%, 5% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  15% { transform: translate(0, 4px) scale(0.95); opacity: 1; }
+  50% { transform: translate(-35vw, 8vh) scale(0.9); opacity: 0.8; }
+  70% { transform: translate(-35vw, 8vh) scale(1); opacity: 0.6; }
+  75% { transform: translate(-35vw, 8vh) scale(1.08); opacity: 0.3; }
+  85%, 100% { transform: translate(-35vw, 8vh) scale(1.08); opacity: 0; }
+}
+
+/* ── Got it button — absolute in overlay ── */
+.ghostGotItBtn {
+  padding: 6px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(140, 210, 255, 0.45);
+  background: rgba(60, 160, 255, 0.18);
+  color: rgba(200, 235, 255, 0.95);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ghostGotItBtn:hover {
+  background: rgba(60, 160, 255, 0.35);
+}
+
+.ghostGotItAbs {
+  position: absolute;
+  top: 110px;
+  right: 4%;
+  z-index: 20003;
+  animation: ghostFadeIn 0.3s ease 0.15s both;
+}
+
+/* ── Keyframes ── */
+@keyframes ghostFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fingerTap {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  35% { transform: translateY(5px) scale(0.9); opacity: 1; }
+  55% { transform: translateY(5px) scale(0.9); opacity: 1; }
+  70% { transform: translateY(0) scale(1); opacity: 0.85; }
+}
+
+@keyframes fingerSaveDeploy {
+  0%, 8% { transform: translateX(0) translateY(0); opacity: 0.85; }
+  18% { transform: translateX(0) translateY(5px) scale(0.9); opacity: 1; }
+  30% { transform: translateX(0) translateY(0); opacity: 0.85; }
+  45% { transform: translateX(80px) translateY(0); opacity: 0.85; }
+  55% { transform: translateX(80px) translateY(5px) scale(0.9); opacity: 1; }
+  68% { transform: translateX(80px) translateY(0); opacity: 0.85; }
+  85%, 100% { transform: translateX(0) translateY(0); opacity: 0.85; }
+}
