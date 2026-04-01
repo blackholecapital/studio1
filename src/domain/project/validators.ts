@@ -19,11 +19,10 @@ import { migrateProject } from "./migrations";
 function isValidExclusiveTile(v: unknown): v is ExclusiveTile {
   if (typeof v !== "object" || v === null) return false;
   const t = v as Record<string, unknown>;
-  return (
-    typeof t.url === "string" &&
-    typeof t.price === "string" &&
-    typeof t.locked === "boolean"
-  );
+  if (typeof t.url !== "string" || typeof t.price !== "string" || typeof t.locked !== "boolean") return false;
+  // contentCode is optional; if present, must be a string
+  if (t.contentCode !== undefined && typeof t.contentCode !== "string") return false;
+  return true;
 }
 
 /** Normalize an array of raw values into valid ExclusiveTile[]. */

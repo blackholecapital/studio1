@@ -74,6 +74,8 @@ export type ExclusiveTile = {
   url: string;
   price: string;
   locked: boolean;
+  /** Catalog content code (e.g. "c2", "c4444") when tile holds a catalog item. */
+  contentCode?: string;
 };
 
 // ── Deploy result ────────────────────────────────────────────────────────────
