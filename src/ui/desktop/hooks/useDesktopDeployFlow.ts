@@ -1,0 +1,107 @@
+import { useCallback } from "react";
+import type { PageKey, ProjectData, ExclusiveTile, CardInteractionState } from "../../../domain/project/types";
+import { cardStateToPageData, hasAnyOverlap } from "../../../domain/editor/selectors";
+import { ensureUniqueSlug } from "../../../domain/editor/actions";
+import { GATEWAY_BASE } from "../../../domain/editor/constants";
+import { layoutConfig } from "../../state/layoutConfig";
+import { buildDesktopDeployBundle } from "../../../services/deploy/buildPayload";
+import { saveProject, deployGateway, downloadProjectJson } from "../../state/editorExport";
+import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
+
+type Args = {
+  slug: string;
+  setSlug: (next: string) => void;
+  page: PageKey;
+  project: ProjectData;
+  cardState: CardInteractionState;
+  wallpaper: string;
+  pageInstructions: string;
+  isGlobalWallpaper: boolean;
+  layout: typeof layoutConfig;
+  workspaceWidth?: number;
+  exclusiveTiles: ExclusiveTile[];
+  setDeploying: (next: boolean) => void;
+  setDeployStatus: (next: string | null) => void;
+  setProject: (next: ProjectData) => void;
+  setIsSaved: (next: boolean) => void;
+  setDeployModal: (next: { slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null) => void;
+};
+
+export function useDesktopDeployFlow(args: Args) {
+  const handleSave = useCallback(() => {
+    if (hasAnyOverlap(args.cardState.cards)) {
+      args.setDeployStatus("⚠ Cannot save — overlapping tiles detected. Move tiles apart first.");
+      setTimeout(() => args.setDeployStatus(null), 3500);
+      return;
+    }
+    const currentPageData = cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions);
+    const updatedPages = { ...args.project.pages, [args.page]: currentPageData };
+    if (args.isGlobalWallpaper) {
+      for (const key of Object.keys(updatedPages)) {
+        updatedPages[key as PageKey] = { ...updatedPages[key as PageKey], wallpaper: args.wallpaper };
+      }
+    }
+    const full: ProjectData = { ...args.project, slug: args.slug, pages: updatedPages };
+    saveProject(full);
+    args.setProject(full);
+    args.setIsSaved(true);
+    args.setDeployStatus("Saved locally");
+    setTimeout(() => args.setDeployStatus(null), 2000);
+  }, [args]);
+
+  const handleDeployGateway = useCallback(async () => {
+    if (hasAnyOverlap(args.cardState.cards)) {
+      args.setDeployStatus("⚠ Cannot deploy — overlapping tiles detected. Move tiles apart first.");
+      setTimeout(() => args.setDeployStatus(null), 3500);
+      return;
+    }
+
+    const effectiveSlug = ensureUniqueSlug(args.slug);
+    if (effectiveSlug !== args.slug) args.setSlug(effectiveSlug);
+
+    const full: ProjectData = {
+      ...args.project,
+      slug: effectiveSlug,
+      pages: {
+        ...args.project.pages,
+        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions),
+      },
+    };
+
+    const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(effectiveSlug, full.pages, {
+      slug: effectiveSlug,
+      scaleParams: { actualWsW: args.workspaceWidth ?? args.layout.workspace.width, actualWsH: args.layout.workspace.height },
+      wsHeight: args.layout.workspace.height,
+      wallpaperCatalog,
+      exclusiveTiles: args.exclusiveTiles,
+    });
+
+    saveProject(full);
+    args.setProject(full);
+    args.setIsSaved(false);
+    args.setDeploying(true);
+    args.setDeployStatus("Deploying...");
+
+    const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
+    args.setDeploying(false);
+
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/gate`;
+    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/holiday`;
+    if (result.ok) args.setDeployStatus(null);
+    args.setDeployModal({ slug: effectiveSlug, primaryUrl, holidayUrl, ok: result.ok, error: result.error });
+  }, [args]);
+
+  const handleDownload = useCallback(() => {
+    const full: ProjectData = {
+      ...args.project,
+      slug: args.slug,
+      pages: {
+        ...args.project.pages,
+        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions),
+      },
+    };
+    downloadProjectJson(full);
+  }, [args]);
+
+  return { handleSave, handleDeployGateway, handleDownload };
+}

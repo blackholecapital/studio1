@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import type { CSSProperties, DragEvent, ChangeEvent } from "react";
+import type { CSSProperties, DragEvent } from "react";
 import { wallpaperCatalog, DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
 import { contentCatalog } from "../core/contentCatalog";
 import { skinCatalog } from "../core/skinCatalog";
@@ -7,8 +7,6 @@ import { thumbnailUrl } from "../core/assetResolver";
 import {
   loadProject,
   saveProject,
-  deployGateway,
-  downloadProjectJson,
 } from "./state/editorExport";
 import { layoutConfig } from "./state/layoutConfig";
 import { useCardInteractions } from "./hooks/useCardInteractions";
@@ -18,15 +16,16 @@ import type { CardModel, CardInteractionState, PageData, ProjectData, ExclusiveT
 import type { PageKey } from "../domain/project/types";
 import { PAGE_KEYS, PAGE_SHORT_TITLES, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, DEFAULT_INSTRUCTIONS, DEFAULT_EXCLUSIVE_TILES, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
 import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
-import { ensureUniqueSlug, sanitizeSlug } from "../domain/editor/actions";
-import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
-import { convertToPng } from "../shared/lib/normalize";
+import { sanitizeSlug } from "../domain/editor/actions";
+import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE } from "../domain/editor/constants";
 
 // Service imports — side-effecting operations
 import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
 import { getOrCreateDesktopSlug } from "../services/runtime/urlState";
-import { buildDesktopDeployBundle } from "../services/deploy/buildPayload";
-import { uploadFile } from "../services/upload/api";
+import { useDesktopDeployFlow } from "./desktop/hooks/useDesktopDeployFlow";
+import { useDesktopUploadFlow } from "./desktop/hooks/useDesktopUploadFlow";
+import { getAllPagesLocked, getPageNavigation, getSelectedCard } from "./desktop/lib/derivedState";
+import { deleteSelectedCardState, patchSelectedCard, setSelectedCardLockPosition, setSelectedCardLockSize, togglePageLockState } from "./desktop/state/desktopReducers";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
@@ -266,10 +265,7 @@ export function App() {
     handleResizePointerDown
   } = useCardInteractions({ cardState, setCardState, layoutConfig });
 
-  const selectedCard = useMemo(
-    () => cardState.cards.find((c) => c.id === cardState.selectedCardId) ?? cardState.cards[0] ?? null,
-    [cardState.cards, cardState.selectedCardId]
-  );
+  const selectedCard = useMemo(() => getSelectedCard(cardState), [cardState]);
   const selectedCardLockSize = selectedCard?.lockSize ?? false;
   const selectedCardLockPosition = selectedCard?.lockPosition ?? false;
 
@@ -413,34 +409,17 @@ export function App() {
   // ── Card operations ──
   function updateSelectedCard(patch: Partial<CardModel>) {
     if (!selectedCard || cardState.lockPage) return;
-    setCardState((current) => ({
-      ...current,
-      cards: current.cards.map((card) =>
-        card.id === selectedCard.id ? { ...card, ...patch } : card
-      )
-    }));
+    setCardState((current) => patchSelectedCard(current, selectedCard.id, patch));
   }
 
   function setLockSize(next: boolean) {
     activeResizeCardIdRef.current = null;
-    setCardState((current) => ({
-      ...current,
-      lockSize: next,
-      cards: current.cards.map((c) =>
-        c.id === current.selectedCardId ? { ...c, lockSize: next } : c
-      )
-    }));
+    setCardState((current) => setSelectedCardLockSize(current, next));
   }
 
   function setLockPosition(next: boolean) {
     activeDragCardIdRef.current = null;
-    setCardState((current) => ({
-      ...current,
-      lockPosition: next,
-      cards: current.cards.map((c) =>
-        c.id === current.selectedCardId ? { ...c, lockPosition: next } : c
-      )
-    }));
+    setCardState((current) => setSelectedCardLockPosition(current, next));
   }
 
   function toggleLockPage() {
@@ -449,20 +428,7 @@ export function App() {
       setTimeout(() => setDeployStatus(null), 3500);
       return;
     }
-    setCardState((current) => {
-      const next = !current.lockPage;
-      return {
-        ...current,
-        lockPage: next,
-        lockSize: next ? true : current.lockSize,
-        lockPosition: next ? true : current.lockPosition,
-        cards: current.cards.map((c) => ({
-          ...c,
-          lockSize: next ? true : c.lockSize,
-          lockPosition: next ? true : c.lockPosition
-        }))
-      };
-    });
+    setCardState((current) => togglePageLockState(current));
     if (!cardState.lockPage) {
       activeResizeCardIdRef.current = null;
       activeDragCardIdRef.current = null;
@@ -548,13 +514,8 @@ export function App() {
     }));
   }
 
-  const allPagesLocked = useMemo(
-    () => PAGE_KEYS.every((k) => (k === page ? cardState.lockPage : (project.pages[k]?.lockPage ?? false))),
-    [page, cardState.lockPage, project.pages]
-  );
-  const pageIndex = PAGE_KEYS.indexOf(page);
-  const canGoPrevPage = pageIndex > 0;
-  const canGoNextPage = pageIndex < PAGE_KEYS.length - 1;
+  const allPagesLocked = useMemo(() => getAllPagesLocked(project, page, cardState), [project, page, cardState]);
+  const { pageIndex, canGoPrevPage, canGoNextPage } = useMemo(() => getPageNavigation(page), [page]);
 
   function goPrevPage() {
     if (!canGoPrevPage) return;
@@ -705,46 +666,10 @@ export function App() {
 
   function deleteSelectedCard() {
     if (!selectedCard || cardState.lockPage) return;
-    setCardState((current) => {
-      const remaining = current.cards.filter((c) => c.id !== current.selectedCardId);
-      return {
-        ...current,
-        cards: remaining,
-        selectedCardId: remaining.length > 0 ? remaining[remaining.length - 1].id : ""
-      };
-    });
+    setCardState((current) => deleteSelectedCardState(current));
   }
 
-  async function handleContentFileUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert("File must be 5MB or less.");
-      e.target.value = "";
-      return;
-    }
-    // Blob URL for immediate studio preview
-    const objectUrl = URL.createObjectURL(file);
-    uploadCounterRef.current += 1;
-    const xn = uploadCounterRef.current;
-    const code = `x${String(xn).padStart(3, "0")}`;
-    const filename = `${code}.png`;
-
-    // Optimistically add with blob URL; upload to demo-bucket in background
-    setUploadedContents((prev) => [...prev, { name: code, url: objectUrl, code }]);
-    e.target.value = "";
-
-    try {
-      // Convert to PNG via canvas (shared utility)
-      const pngBlob = await convertToPng(file);
-      const result = await uploadFile(pngBlob, filename, slug);
-      if (result.ok && result.remoteUrl) {
-        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: result.remoteUrl! } : u));
-      }
-    } catch {
-      // Upload failure is non-fatal for studio preview; code is still set
-    }
-  }
+  const { handleContentFileUpload } = useDesktopUploadFlow(slug, uploadCounterRef, setUploadedContents);
 
   const handleContentDragStart = useCallback((e: DragEvent, contentUrl: string, contentCode?: string) => {
     e.dataTransfer.setData("text/plain", contentUrl);
@@ -842,101 +767,24 @@ export function App() {
     e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  // ── Save (local JSON) ──
-  function handleSave() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot save — overlapping tiles detected. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3500);
-      return;
-    }
-    const currentPageData = cardStateToPageData(cardState, wallpaper, pageInstructions);
-    let updatedPages = { ...project.pages, [page]: currentPageData };
-    if (isGlobalWallpaper) {
-      for (const key of Object.keys(updatedPages)) {
-        updatedPages[key] = { ...updatedPages[key], wallpaper };
-      }
-    }
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: updatedPages
-    };
-    const serialized = saveProject(full);
-    setProject(full);
-    setIsSaved(true);
-    setDeployStatus("Saved locally");
-    setTimeout(() => setDeployStatus(null), 2000);
-    console.info("Saved project JSON", serialized);
-  }
-
-  // ── Deploy to R2 ──
-  async function handleDeployGateway() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot deploy — overlapping tiles detected. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3500);
-      return;
-    }
-    const effectiveSlug = ensureUniqueSlug(slug);
-    if (effectiveSlug !== slug) {
-      setSlug(effectiveSlug);
-    }
-
-    const full: ProjectData = {
-      ...project,
-      slug: effectiveSlug,
-      pages: {
-        ...project.pages,
-        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
-      }
-    };
-
-    // Build deploy payloads via service
-    const actualWsW = workspaceRef.current?.offsetWidth ?? layoutConfig.workspace.width;
-    const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(
-      effectiveSlug,
-      full.pages,
-      {
-        slug: effectiveSlug,
-        scaleParams: { actualWsW, actualWsH: layoutConfig.workspace.height },
-        wsHeight: layoutConfig.workspace.height,
-        wallpaperCatalog,
-        exclusiveTiles,
-      },
-    );
-
-    // Always save locally first
-    saveProject(full);
-    setProject(full);
-    setIsSaved(false);
-
-    setDeploying(true);
-    setDeployStatus("Deploying...");
-
-    const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
-
-    setDeploying(false);
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/holiday`;
-    if (result.ok) {
-      setDeployStatus(null);
-    } else {
-      console.error("[deploy] failed:", result.error);
-    }
-    setDeployModal({ slug: effectiveSlug, primaryUrl, holidayUrl, ok: result.ok, error: result.error });
-  }
-
-  // ── Download JSON ──
-  function handleDownload() {
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: {
-        ...project.pages,
-        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
-      }
-    };
-    downloadProjectJson(full);
-  }
+  const { handleSave, handleDeployGateway, handleDownload } = useDesktopDeployFlow({
+    slug,
+    setSlug,
+    page,
+    project,
+    cardState,
+    wallpaper,
+    pageInstructions,
+    isGlobalWallpaper,
+    layout: layoutConfig,
+    workspaceWidth: workspaceRef.current?.offsetWidth,
+    exclusiveTiles,
+    setDeploying,
+    setDeployStatus,
+    setProject,
+    setIsSaved,
+    setDeployModal,
+  });
 
   const shellLayoutStyle = {
     "--studio-wallpaper": `url(${wallpaper})`,
