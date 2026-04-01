@@ -1,9 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { CSSProperties, DragEvent } from "react";
-import { wallpaperCatalog, DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
-import { contentCatalog } from "../core/contentCatalog";
-import { skinCatalog } from "../core/skinCatalog";
-import { thumbnailUrl } from "../core/assetResolver";
+import { DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
 import {
   loadProject,
   saveProject,
@@ -26,6 +23,11 @@ import { useDesktopDeployFlow } from "./desktop/hooks/useDesktopDeployFlow";
 import { useDesktopUploadFlow } from "./desktop/hooks/useDesktopUploadFlow";
 import { getAllPagesLocked, getPageNavigation, getSelectedCard } from "./desktop/lib/derivedState";
 import { deleteSelectedCardState, patchSelectedCard, setSelectedCardLockPosition, setSelectedCardLockSize, togglePageLockState } from "./desktop/state/desktopReducers";
+import { DesktopAppShell } from "./desktop/DesktopAppShell";
+import { DesktopTopBar } from "./desktop/sections/DesktopTopBar";
+import { WallpaperRail } from "./desktop/panels/WallpaperRail";
+import { DesktopWorkspace } from "./desktop/sections/DesktopWorkspace";
+import { ContentRail } from "./desktop/panels/ContentRail";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
