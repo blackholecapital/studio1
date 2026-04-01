@@ -8,10 +8,30 @@
  * minimal validation inline. These validators formalize that logic.
  */
 
-import type { CardModel, PageData, ProjectData } from "./types";
+import type { CardModel, ExclusiveTile, PageData, ProjectData } from "./types";
 import { PROJECT_VERSION } from "./schema";
 import { makeEmptyPage } from "./defaults";
 import { migrateProject } from "./migrations";
+
+// ── Exclusive tile validation ───────────────────────────────────────────────
+
+/** Check that a value looks like an ExclusiveTile. */
+function isValidExclusiveTile(v: unknown): v is ExclusiveTile {
+  if (typeof v !== "object" || v === null) return false;
+  const t = v as Record<string, unknown>;
+  return (
+    typeof t.url === "string" &&
+    typeof t.price === "string" &&
+    typeof t.locked === "boolean"
+  );
+}
+
+/** Normalize an array of raw values into valid ExclusiveTile[]. */
+function normalizeExclusiveTiles(raw: unknown): ExclusiveTile[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const valid = raw.filter(isValidExclusiveTile);
+  return valid.length > 0 ? valid : undefined;
+}
 
 // ── Card validation ──────────────────────────────────────────────────────────
 
@@ -55,7 +75,7 @@ export function normalizePage(raw: Record<string, unknown>): PageData {
     ? (raw.cards as unknown[]).filter(isValidCard)
     : [];
 
-  return {
+  const page: PageData = {
     wallpaper: typeof raw.wallpaper === "string" && raw.wallpaper ? raw.wallpaper : base.wallpaper,
     cards,
     selectedCardId: typeof raw.selectedCardId === "string" ? raw.selectedCardId : cards[0]?.id ?? "",
@@ -67,6 +87,9 @@ export function normalizePage(raw: Record<string, unknown>): PageData {
         ? raw.instructions
         : base.instructions,
   };
+  const tiles = normalizeExclusiveTiles(raw.exclusiveTiles);
+  if (tiles) page.exclusiveTiles = tiles;
+  return page;
 }
 
 // ── Project validation ───────────────────────────────────────────────────────

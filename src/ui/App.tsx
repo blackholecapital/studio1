@@ -99,7 +99,10 @@ export function App() {
   const [leftMode, setLeftMode] = useState<"create" | "gateway">("create");
   const [leftRailTab, setLeftRailTab] = useState<LeftRailTab>("wallpaper");
   const [tooltipOpen, setTooltipOpen] = useState<string | null>(null);
-  const [exclusiveTiles, setExclusiveTiles] = useState<ExclusiveTile[]>([...DEFAULT_EXCLUSIVE_TILES]);
+  const [exclusiveTiles, setExclusiveTiles] = useState<ExclusiveTile[]>(() => {
+    const existing = loadProject("user");
+    return existing?.pages?.p4?.exclusiveTiles ?? [...DEFAULT_EXCLUSIVE_TILES];
+  });
   const [uploadedContents, setUploadedContents] = useState<Array<{ name: string; url: string; code: string }>>([]);
   const contentFileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadCounterRef = useRef(0);
@@ -290,11 +293,11 @@ export function App() {
       slug,
       pages: {
         ...prev.pages,
-        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
+        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions, page === "p4" ? exclusiveTiles : undefined)
       }
     }));
     setIsSaved(false);
-  }, [cardState, wallpaper, page, slug, pageInstructions]);
+  }, [cardState, wallpaper, page, slug, pageInstructions, exclusiveTiles]);
 
   // ── Switch page: save old, load new ──
   function switchPage(nextPage: PageKey) {
@@ -307,7 +310,7 @@ export function App() {
         slug,
         pages: {
           ...prev.pages,
-          [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
+          [page]: cardStateToPageData(cardState, wallpaper, pageInstructions, page === "p4" ? exclusiveTiles : undefined)
         }
       };
 
@@ -335,6 +338,11 @@ export function App() {
         setCardState(pageDataToCardState(target));
       }
 
+      // Load exclusive tiles when switching to p4
+      if (nextPage === "p4") {
+        setExclusiveTiles(target.exclusiveTiles ?? [...DEFAULT_EXCLUSIVE_TILES]);
+      }
+
       // Update cardCounter to avoid ID collisions
       const maxId = maxCardCounter(target.cards);
       if (maxId >= cardCounter) cardCounter = maxId;
@@ -359,7 +367,7 @@ export function App() {
         slug: prev.slug,
         pages: {
           ...prev.pages,
-          [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
+          [page]: cardStateToPageData(cardState, wallpaper, pageInstructions, page === "p4" ? exclusiveTiles : undefined)
         }
       };
       saveProject(current);
@@ -393,6 +401,10 @@ export function App() {
       setPageInstructions(pageData.instructions || DEFAULT_INSTRUCTIONS);
       setCardState(pageDataToCardState(pageData));
     }
+
+    // Load exclusive tiles from the new project's p4
+    const p4Data = loaded.pages?.p4;
+    setExclusiveTiles(p4Data?.exclusiveTiles ?? [...DEFAULT_EXCLUSIVE_TILES]);
 
     const maxId = maxCardCounter(pageData.cards);
     if (maxId >= cardCounter) cardCounter = maxId;
@@ -468,7 +480,7 @@ export function App() {
       pages: Object.fromEntries(
         PAGE_KEYS.map((k) => {
           const pd = k === page
-            ? cardStateToPageData(cardState, wallpaper, pageInstructions)
+            ? cardStateToPageData(cardState, wallpaper, pageInstructions, k === "p4" ? exclusiveTiles : undefined)
             : (prev.pages[k] ?? makeEmptyPage());
           return [k, { ...pd, lockPage: true, lockSize: true, lockPosition: true, cards: pd.cards.map((c) => ({ ...c, lockSize: true, lockPosition: true })) }];
         })
@@ -491,7 +503,7 @@ export function App() {
       pages: Object.fromEntries(
         PAGE_KEYS.map((k) => {
           const pd = k === page
-            ? cardStateToPageData(cardState, wallpaper, pageInstructions)
+            ? cardStateToPageData(cardState, wallpaper, pageInstructions, k === "p4" ? exclusiveTiles : undefined)
             : (prev.pages[k] ?? makeEmptyPage());
           return [k, { ...pd, lockPage: false, lockSize: false, lockPosition: false, cards: pd.cards.map((c) => ({ ...c, lockSize: false, lockPosition: false })) }];
         })
@@ -526,15 +538,17 @@ export function App() {
     const freshPages = Object.fromEntries(
       PAGE_KEYS.map((k) => {
         const def = makeDefaultPageState(DEFAULT_WALLPAPER);
-        return [k, {
+        const pageData: Record<string, unknown> = {
           wallpaper: DEFAULT_WALLPAPER,
           cards: def.cardState.cards,
           selectedCardId: def.cardState.selectedCardId ?? "",
           lockSize: false,
           lockPosition: false,
           lockPage: false,
-          instructions: DEFAULT_INSTRUCTIONS
-        }];
+          instructions: DEFAULT_INSTRUCTIONS,
+        };
+        if (k === "p4") pageData.exclusiveTiles = [...DEFAULT_EXCLUSIVE_TILES];
+        return [k, pageData];
       })
     );
     setProject((prev) => {

@@ -6,7 +6,7 @@
  *   - src/ui/MobileApp.tsx (pageDataToCardState, cardStateToPageData, hasAnyOverlap)
  */
 
-import type { CardModel, CardInteractionState, PageData } from "../project/types";
+import type { CardModel, CardInteractionState, ExclusiveTile, PageData } from "../project/types";
 
 /**
  * Convert a persisted PageData into the runtime CardInteractionState.
@@ -32,8 +32,9 @@ export function cardStateToPageData(
   cs: CardInteractionState,
   wallpaper: string,
   instructions = "",
+  exclusiveTiles?: ExclusiveTile[],
 ): PageData {
-  return {
+  const page: PageData = {
     wallpaper,
     cards: cs.cards,
     selectedCardId: cs.selectedCardId,
@@ -42,6 +43,8 @@ export function cardStateToPageData(
     lockPage: cs.lockPage,
     instructions,
   };
+  if (exclusiveTiles) page.exclusiveTiles = exclusiveTiles;
+  return page;
 }
 
 /**

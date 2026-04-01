@@ -56,6 +56,8 @@ export type PageData = {
   lockPosition: boolean;
   lockPage: boolean;
   instructions: string;
+  /** Exclusive content tiles (only meaningful on p4, but always serialized). */
+  exclusiveTiles?: ExclusiveTile[];
 };
 
 // ── Full project (all pages + slug) ──────────────────────────────────────────
