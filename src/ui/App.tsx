@@ -5,41 +5,36 @@ import { contentCatalog } from "../core/contentCatalog";
 import { skinCatalog } from "../core/skinCatalog";
 import { thumbnailUrl } from "../core/assetResolver";
 import {
-  makeEmptyProject,
-  makeEmptyPage,
   loadProject,
   saveProject,
   deployGateway,
   downloadProjectJson,
-  type ProjectData,
-  type PageData
 } from "./state/editorExport";
 import { layoutConfig } from "./state/layoutConfig";
-import {
-  useCardInteractions,
-  type CardModel,
-  type CardInteractionState
-} from "./hooks/useCardInteractions";
+import { useCardInteractions } from "./hooks/useCardInteractions";
+
+// Domain imports — shared types, constants, selectors, actions
+import type { CardModel, CardInteractionState, PageData, ProjectData, ExclusiveTile } from "../domain/project/types";
+import type { PageKey } from "../domain/project/types";
+import { PAGE_KEYS, PAGE_SHORT_TITLES, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, DEFAULT_INSTRUCTIONS, DEFAULT_EXCLUSIVE_TILES, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
+import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
+import { ensureUniqueSlug, sanitizeSlug } from "../domain/editor/actions";
+import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
+import { convertToPng } from "../shared/lib/normalize";
+
+// Service imports — side-effecting operations
+import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
+import { getOrCreateDesktopSlug } from "../services/runtime/urlState";
+import { buildDesktopDeployBundle } from "../services/deploy/buildPayload";
+import { uploadFile } from "../services/upload/api";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
-type PageKey = "p1" | "p2" | "p3" | "p4";
 
-const PAGE_KEYS: PageKey[] = ["p1", "p2", "p3", "p4"];
-
-const pages: Array<{ key: PageKey; label: string }> = [
-  { key: "p1", label: "Gateway" },
-  { key: "p2", label: "Members" },
-  { key: "p3", label: "Access" },
-  { key: "p4", label: "Exclusive" }
-];
-
-const PAGE_SHORT_TITLES: Record<PageKey, string> = {
-  p1: "Gateway",
-  p2: "Members",
-  p3: "Access",
-  p4: "Exclusive"
-};
+const pages: Array<{ key: PageKey; label: string }> = PAGE_KEYS.map((key) => ({
+  key,
+  label: PAGE_SHORT_TITLES[key],
+}));
 
 const rightRailTabs: Array<{ key: SurfaceTab; label: string }> = [
   { key: "content", label: "Content" },
@@ -64,35 +59,9 @@ const DEFAULT_MEDIA_TILES: MediaTileItem[] = [
   { id: "media-video-1", label: "Video", type: "video", placeholder: "https://...mp4", buttonLabel: "Video File" },
   { id: "media-image-1", label: "Media", type: "image", placeholder: "https://...",    buttonLabel: "Media File" },
 ];
-const CATALOG_PAGE_SIZE = 8;
-
 let cardCounter = 0;
 
-function pageDataToCardState(pd: PageData): CardInteractionState {
-  return {
-    cards: pd.cards,
-    selectedCardId: pd.selectedCardId,
-    lockSize: pd.lockSize,
-    lockPosition: pd.lockPosition,
-    lockPage: pd.lockPage ?? false
-  };
-}
-
-function cardStateToPageData(cs: CardInteractionState, wallpaper: string, instructions: string): PageData {
-  return {
-    wallpaper,
-    cards: cs.cards,
-    selectedCardId: cs.selectedCardId,
-    lockSize: cs.lockSize,
-    lockPosition: cs.lockPosition,
-    lockPage: cs.lockPage,
-    instructions
-  };
-}
-
-const INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c5555.png";
-const LEFT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c5555.png";
-const RIGHT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c2232.png";
+const INSTRUCTIONS_IMAGE = DESKTOP_INSTRUCTIONS_IMAGE;
 
 function makeDefaultCard(wsW?: number, wsH?: number): CardModel {
   cardCounter += 1;
@@ -115,7 +84,6 @@ function makeDefaultCard(wsW?: number, wsH?: number): CardModel {
 }
 
 const DEFAULT_WALLPAPER = DEFAULT_WALLPAPER_URL;
-const DEFAULT_INSTRUCTIONS = "Add content, skins, media";
 
 function makeDefaultPageState(wallpaper: string): { cardState: CardInteractionState; instructions: string; wallpaper: string } {
   const card = makeDefaultCard();
@@ -133,28 +101,14 @@ function makeDefaultPageState(wallpaper: string): { cardState: CardInteractionSt
 }
 
 export function App() {
-  const [slug, setSlug] = useState(() => {
-    const stored = localStorage.getItem("drip-studio:desktop-slug");
-    if (stored) return stored;
-    const id = Math.random().toString(36).slice(2, 10);
-    localStorage.setItem("drip-studio:desktop-slug", id);
-    return id;
-  });
+  const [slug, setSlug] = useState(getOrCreateDesktopSlug);
   const [page, setPageRaw] = useState<PageKey>("p1");
   const [activeTab, setActiveTab] = useState<SurfaceTab>("content");
   const [leftMode, setLeftMode] = useState<"create" | "gateway">("create");
   const [leftRailTab, setLeftRailTab] = useState<LeftRailTab>("wallpaper");
   const [tooltipOpen, setTooltipOpen] = useState<string | null>(null);
   const [pageDropOpen, setPageDropOpen] = useState(false);
-  type ExclusiveTile = { url: string; price: string; locked: boolean };
-  const [exclusiveTiles, setExclusiveTiles] = useState<ExclusiveTile[]>([
-    { url: "", price: "", locked: false },
-    { url: "", price: "", locked: false },
-    { url: "", price: "", locked: false },
-    { url: "", price: "$1.00", locked: true },
-    { url: "", price: "$1.00", locked: true },
-    { url: "", price: "$1.00", locked: true },
-  ]);
+  const [exclusiveTiles, setExclusiveTiles] = useState<ExclusiveTile[]>([...DEFAULT_EXCLUSIVE_TILES]);
   const [uploadedContents, setUploadedContents] = useState<Array<{ name: string; url: string; code: string }>>([]);
   const contentFileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadCounterRef = useRef(0);
@@ -192,7 +146,7 @@ export function App() {
     setLeftRailTab("wallpaper");
     setLeftMode("create");
     setActiveTab("content");
-    localStorage.setItem("ghostFlowSeen", "true");
+    markGhostFlowSeen();
   }, []);
 
   // Start ghost flow on mount
@@ -274,7 +228,7 @@ export function App() {
 
   // Dev reset
   useEffect(() => {
-    (window as any).resetGhostFlow = () => { localStorage.removeItem("ghostFlowSeen"); location.reload(); };
+    (window as any).resetGhostFlow = () => { resetGhostFlowStorage(); location.reload(); };
   }, []);
 
   // Per-page state stored in a project map
@@ -341,22 +295,6 @@ export function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  function hasAnyOverlap(cards: CardModel[]) {
-    for (let i = 0; i < cards.length; i += 1) {
-      const a = cards[i];
-      for (let j = i + 1; j < cards.length; j += 1) {
-        const b = cards[j];
-        const intersects =
-          a.x < b.x + b.w &&
-          a.x + a.w > b.x &&
-          a.y < b.y + b.h &&
-          a.y + a.h > b.y;
-        if (intersects) return true;
-      }
-    }
-    return false;
-  }
-
   // ── Save current page into project whenever cardState or wallpaper changes ──
   useEffect(() => {
     setProject((prev) => ({
@@ -410,10 +348,7 @@ export function App() {
       }
 
       // Update cardCounter to avoid ID collisions
-      const maxId = target.cards.reduce((max, c) => {
-        const num = parseInt(c.id.replace("card-", ""), 10);
-        return isNaN(num) ? max : Math.max(max, num);
-      }, 0);
+      const maxId = maxCardCounter(target.cards);
       if (maxId >= cardCounter) cardCounter = maxId;
 
       return updated;
@@ -425,9 +360,9 @@ export function App() {
 
   // ── Load project when slug changes ──
   function handleSlugChange(newSlug: string) {
-    const sanitized = newSlug.replace(/[^a-zA-Z0-9_-]/g, "") || "user";
+    const sanitized = sanitizeSlug(newSlug);
     setSlug(sanitized);
-    localStorage.setItem("drip-studio:desktop-slug", sanitized);
+    saveDesktopSlug(sanitized);
 
     // Save current project first
     setProject((prev) => {
@@ -471,10 +406,7 @@ export function App() {
       setCardState(pageDataToCardState(pageData));
     }
 
-    const maxId = pageData.cards.reduce((max, c) => {
-      const num = parseInt(c.id.replace("card-", ""), 10);
-      return isNaN(num) ? max : Math.max(max, num);
-    }, 0);
+    const maxId = maxCardCounter(pageData.cards);
     if (maxId >= cardCounter) cardCounter = maxId;
   }
 
@@ -668,14 +600,7 @@ export function App() {
     setWallpaper(DEFAULT_WALLPAPER);
     setPageInstructions(DEFAULT_INSTRUCTIONS);
     setWallpaperPreview(null);
-    setExclusiveTiles([
-      { url: "", price: "", locked: false },
-      { url: "", price: "", locked: false },
-      { url: "", price: "", locked: false },
-      { url: "", price: "$1.00", locked: true },
-      { url: "", price: "$1.00", locked: true },
-      { url: "", price: "$1.00", locked: true },
-    ]);
+    setExclusiveTiles([...DEFAULT_EXCLUSIVE_TILES]);
   }
 
   function addCard() {
@@ -810,38 +735,11 @@ export function App() {
     e.target.value = "";
 
     try {
-      // Convert to PNG via canvas (same as mobile)
-      const img = new Image();
-      const pngBlob: Blob = await new Promise((resolve) => {
-        const blobUrl = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(blobUrl);
-          const MAX = 1200;
-          let w = img.naturalWidth, h = img.naturalHeight;
-          if (w > MAX || h > MAX) {
-            const scale = MAX / Math.max(w, h);
-            w = Math.round(w * scale);
-            h = Math.round(h * scale);
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext("2d")!;
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => resolve(blob ?? file), "image/png");
-        };
-        img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
-        img.src = blobUrl;
-      });
-
-      const form = new FormData();
-      form.append("file", new File([pngBlob], filename, { type: "image/png" }));
-      form.append("slug", slug);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json() as { ok: boolean };
-      if (data.ok) {
-        const remoteUrl = `https://demo-content.xyz-labs.xyz/tenant-content/${slug}/${filename}`;
-        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: remoteUrl } : u));
+      // Convert to PNG via canvas (shared utility)
+      const pngBlob = await convertToPng(file);
+      const result = await uploadFile(pngBlob, filename, slug);
+      if (result.ok && result.remoteUrl) {
+        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: result.remoteUrl! } : u));
       }
     } catch {
       // Upload failure is non-fatal for studio preview; code is still set
@@ -944,15 +842,6 @@ export function App() {
     e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  // ── Slug randomizer ──
-  function ensureUniqueSlug(current: string): string {
-    if (current.trim() === "" || current === "user") {
-      const suffix = Math.random().toString(16).slice(2, 6);
-      return `user-${suffix}`;
-    }
-    return current;
-  }
-
   // ── Save (local JSON) ──
   function handleSave() {
     if (hasAnyOverlap(cardState.cards)) {
@@ -1001,116 +890,19 @@ export function App() {
       }
     };
 
-    // Holiday pack wallpaper overrides by page key
-    const HOLIDAY_CODES: Record<string, string> = { p1: "w1", p2: "w2", p3: "w4", p4: "w5" };
-
-    // ── Deploy coordinate scaling ──────────────────────────────────────────
-    // Use the actual DOM workspace width so card x positions map proportionally:
-    //   deployed_x = card.x × (DEPLOY_W / actualWsW)  (no X offset needed)
-    // DEPLOY_Y_OFFSET = 10 % of DEPLOY_H (80px) clears the deployed nav bar.
-    // Bottom cards land at 95% of DEPLOY_H (760px) when bottomY ≈ 432 studio px.
-    const DEPLOY_W = 1400;
-    const DEPLOY_H = 800;
-    const DEPLOY_X_OFFSET = 0;
-    const DEPLOY_Y_OFFSET = 80; // 10 % of 800 — clears deployed nav bar
+    // Build deploy payloads via service
     const actualWsW = workspaceRef.current?.offsetWidth ?? layoutConfig.workspace.width;
-    const dsx = DEPLOY_W / actualWsW;   // actual studio→deploy x scale
-    const dsy = DEPLOY_H / layoutConfig.workspace.height;
-    function scaleForDeploy(card: { x: number; y: number; w: number; h: number }) {
-      return {
-        x: Math.round(card.x * dsx) + DEPLOY_X_OFFSET,
-        y: Math.round(card.y * dsy) + DEPLOY_Y_OFFSET,
-        w: Math.round(card.w * dsx),
-        h: Math.round(card.h * dsy),
-      };
-    }
-
-    // Build page payload (codes only — no raw URLs in JSON)
-    function buildPagePayload(pageKey: string, pageData: ReturnType<typeof cardStateToPageData>, overrideWallpaperCode?: string) {
-      const wpItem = wallpaperCatalog.find((w) => w.url === pageData.wallpaper);
-      const wallpaperCode = overrideWallpaperCode ?? wpItem?.code ?? "";
-
-      // For p4 (Exclusive): only emit wallpaperCode unless the user has placed
-      // non-default content (any card with a real contentCode, skin, or exclusive flag).
-      if (pageKey === "p4") {
-        const hasUserContent = pageData.cards.some(
-          (c) => (c.contentCode && c.contentCode !== "c5555") || c.skinId || c.isExclusive
-        );
-        const activeTiles = exclusiveTiles
-          .map((tile, i) => {
-            if (!tile.url && !tile.price && !tile.locked) return null;
-            return {
-              tileNumber: i + 1,
-              contentCode: `EC-${String(i + 1).padStart(3, "0")}`,
-              tileName: `Exclusive Content-${i + 1}`,
-              lockStatus: tile.locked ? "locked" : "unlocked",
-              purchasePrice: tile.price || null,
-              contentUrl: tile.url || null
-            };
-          })
-          .filter(Boolean);
-        const payload: Record<string, unknown> = {
-          wallpaperCode,
-          viewport: { width: DEPLOY_W, height: DEPLOY_H },
-        };
-        if (hasUserContent) {
-          payload.cards = pageData.cards
-            .filter((c) => (c.contentCode && c.contentCode !== "c5555") || c.skinId || c.isExclusive)
-            .map((card) => ({
-              id: card.id, ...scaleForDeploy(card),
-              contentCode: card.contentCode ?? null,
-              skinId: card.skinId ? card.skinId.toLowerCase() : null,
-              isExclusive: card.isExclusive ?? false,
-              exclusivePrice: card.exclusivePrice ?? null
-            }));
-        }
-        if (activeTiles.length > 0) payload.exclusiveTiles = activeTiles;
-        return payload;
-      }
-
-      // p1–p3: include all cards (filtering nulls), default c9999 card is always present
-      const effectiveSlugVal = effectiveSlug;
-      const cards = pageData.cards.map((card) => {
-        const cc = card.contentCode ?? null;
-        const isUserUpload = cc && /^x\d+$/i.test(cc);
-        const base: Record<string, unknown> = {
-          id: card.id,
-          ...scaleForDeploy(card),
-          contentCode: cc,
-          skinId: card.skinId ? card.skinId.toLowerCase() : null,
-          isExclusive: card.isExclusive ?? false,
-          exclusivePrice: card.exclusivePrice ?? null
-        };
-        if (isUserUpload) {
-          base.contentUrl = card.contentUrl || card.contentImage || `https://demo-content.xyz-labs.xyz/tenant-content/${effectiveSlugVal}/${cc}.png`;
-        }
-        return base;
-      });
-      return {
-        wallpaperCode,
-        cards,
-        viewport: { width: DEPLOY_W, height: DEPLOY_H },
-      };
-    }
-
-    // Map internal page keys to backend route names
-    const PAGE_ROUTES: Record<string, string> = { p1: "gate", p2: "members", p3: "access", p4: "tier-2" };
-
-    const mainPayload = {
-      version: 1,
-      slug: effectiveSlug,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd)])
-      )
-    };
-
-    const holidayPayload = {
-      version: 1,
-      slug: effectiveSlug,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd, HOLIDAY_CODES[pk])])
-      )
-    };
+    const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(
+      effectiveSlug,
+      full.pages,
+      {
+        slug: effectiveSlug,
+        scaleParams: { actualWsW, actualWsH: layoutConfig.workspace.height },
+        wsHeight: layoutConfig.workspace.height,
+        wallpaperCatalog,
+        exclusiveTiles,
+      },
+    );
 
     // Always save locally first
     saveProject(full);
@@ -1123,8 +915,8 @@ export function App() {
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
 
     setDeploying(false);
-    const primaryUrl = result.primaryUrl ?? `https://gateway.xyz-labs.xyz/${effectiveSlug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `https://gateway.xyz-labs.xyz/${effectiveSlug}/holiday`;
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/gate`;
+    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/holiday`;
     if (result.ok) {
       setDeployStatus(null);
     } else {

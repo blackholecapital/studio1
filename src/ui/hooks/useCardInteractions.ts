@@ -1,34 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-export type CardModel = {
-  id: string;
-  label?: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  zIndex?: number;
-  lockSize?: boolean;
-  lockPosition?: boolean;
-  contentImage?: string;
-  contentUrl?: string;
-  contentType?: "image" | "video";
-  contentDisplay?: "image" | "video" | "url";
-  /** Asset code used in deployed JSON (c#, x#-filename, g#, etc.) */
-  contentCode?: string;
-  skinId?: string;
-  isExclusive?: boolean;
-  exclusivePrice?: string;
-};
-
-export type CardInteractionState = {
-  cards: CardModel[];
-  selectedCardId: string;
-  lockSize: boolean;
-  lockPosition: boolean;
-  lockPage: boolean;
-};
+// Types are now defined in the domain layer; re-export for backwards compat.
+export type { CardModel, CardInteractionState } from "../../domain/project/types";
+import type { CardModel, CardInteractionState } from "../../domain/project/types";
 
 type Params = {
   cardState: CardInteractionState;

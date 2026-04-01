@@ -6,31 +6,34 @@ import { thumbnailUrl, MEDIA_BASE } from "../core/assetResolver";
 import { contentCatalog, type ContentItem } from "../core/contentCatalog";
 import { skinCatalog } from "../core/skinCatalog";
 import {
-  makeEmptyPage,
   loadProject,
   saveProject,
   deployGateway,
-  makeEmptyProject,
-  type ProjectData,
-  type PageData,
 } from "./state/editorExport";
-import {
-  useCardInteractions,
-  type CardModel,
-  type CardInteractionState,
-} from "./hooks/useCardInteractions";
+import { useCardInteractions } from "./hooks/useCardInteractions";
+
+// Domain imports — shared types, constants, selectors, actions
+import type { CardModel, CardInteractionState, PageData, ProjectData } from "../domain/project/types";
+import type { PageKey } from "../domain/project/types";
+import { PAGE_KEYS, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
+import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
+import { MOB_NAV_H, MOBILE_DEPLOY_W, MOBILE_DEPLOY_H, MOBILE_INSTRUCTIONS_IMAGE, UPLOAD_ENDPOINT, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
+import { convertToPng } from "../shared/lib/normalize";
+
+// Service imports — side-effecting operations
+import { saveMobileSlug, saveUserUploads, saveUploadCounter, loadUserUploads, loadUploadCounter } from "../services/storage/projectStore";
+import { getOrCreateMobileSlug } from "../services/runtime/urlState";
+import { buildMobileDeployBundle } from "../services/deploy/buildPayload";
+import { uploadFile } from "../services/upload/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins";
-type PageKey = "p1" | "p2" | "p3" | "p4";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const MOB_NAV_H = 63;
-const INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c4444.png";
+const INSTRUCTIONS_IMAGE = MOBILE_INSTRUCTIONS_IMAGE;
 const DEFAULT_WALLPAPER = DEFAULT_MOBILE_WALLPAPER_URL;
 
-const PAGE_KEYS: PageKey[] = ["p1", "p2", "p3", "p4"];
-
+/** Mobile page titles (uppercase). Desktop uses PAGE_SHORT_TITLES from defaults. */
 const PAGE_TITLES: Record<PageKey, string> = {
   p1: "GATEWAY",
   p2: "MEMBERS",
@@ -42,43 +45,6 @@ const mediaTiles = [
   { id: "media-video-1", type: "video" as const, placeholder: "https://...mp4", buttonLabel: "Video File" },
   { id: "media-image-1", type: "image" as const, placeholder: "https://...",    buttonLabel: "Media File" },
 ];
-
-const UPLOAD_ENDPOINT = "/api/upload";
-const DEMO_CONTENT_BASE = "https://demo-content.xyz-labs.xyz";
-
-/** Convert any image file to PNG via canvas, scaling down to max 1200px on longest side. */
-function convertToPng(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const blobUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(blobUrl);
-      const MAX = 1200;
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      if (w > MAX || h > MAX) {
-        const scale = MAX / Math.max(w, h);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { resolve(file); return; }
-      ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob((blob) => {
-        resolve(blob ?? file);
-      }, "image/png");
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(blobUrl);
-      // Fall back to original file if conversion fails
-      resolve(file);
-    };
-    img.src = blobUrl;
-  });
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getMobDims() {
@@ -110,28 +76,6 @@ function makeMobDefaultCard(dims: { width: number; height: number }): CardModel 
   };
 }
 
-function pageDataToCardState(pd: PageData): CardInteractionState {
-  return {
-    cards: pd.cards,
-    selectedCardId: pd.selectedCardId,
-    lockSize: pd.lockSize,
-    lockPosition: pd.lockPosition,
-    lockPage: pd.lockPage ?? false,
-  };
-}
-
-function cardStateToPageData(cs: CardInteractionState, wallpaper: string): PageData {
-  return {
-    wallpaper,
-    cards: cs.cards,
-    selectedCardId: cs.selectedCardId,
-    lockSize: cs.lockSize,
-    lockPosition: cs.lockPosition,
-    lockPage: cs.lockPage,
-    instructions: "",
-  };
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 export function MobileApp() {
   // ── Workspace dimensions (reactive to orientation changes) ──
@@ -144,13 +88,7 @@ export function MobileApp() {
   }, []);
 
   // ── Studio state ──
-  const initialSlug = useMemo(() => {
-    const stored = localStorage.getItem("drip-studio:mob-slug");
-    if (stored) return stored;
-    const id = Math.random().toString(36).slice(2, 10);
-    localStorage.setItem("drip-studio:mob-slug", id);
-    return id;
-  }, []);
+  const initialSlug = useMemo(() => getOrCreateMobileSlug(), []);
   const [slug, setSlug] = useState(initialSlug);
   const [page, setPageRaw] = useState<PageKey>("p1");
   const [wallpaper, setWallpaper] = useState(DEFAULT_WALLPAPER);
@@ -177,17 +115,8 @@ export function MobileApp() {
   const [contentPanelSide, setContentPanelSide] = useState<"left" | "right">("right");
 
   // ── User uploads (x-designation) ──
-  const [userUploads, setUserUploads] = useState<ContentItem[]>(() => {
-    try {
-      const raw = localStorage.getItem("drip-studio:user-uploads");
-      return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-  });
-  const [uploadCounter, setUploadCounter] = useState(() => {
-    try {
-      return parseInt(localStorage.getItem("drip-studio:upload-counter") ?? "0", 10) || 0;
-    } catch { return 0; }
-  });
+  const [userUploads, setUserUploads] = useState<ContentItem[]>(() => loadUserUploads<ContentItem>());
+  const [uploadCounter, setUploadCounter] = useState(loadUploadCounter);
   const [uploading, setUploading] = useState(false);
 
   // ── Project ──
@@ -286,10 +215,7 @@ export function MobileApp() {
       } else {
         setWallpaper(target.wallpaper || DEFAULT_WALLPAPER);
         setCardState(pageDataToCardState(target));
-        const maxId = target.cards.reduce((max, c) => {
-          const num = parseInt(c.id.replace("card-", ""), 10);
-          return isNaN(num) ? max : Math.max(max, num);
-        }, 0);
+        const maxId = maxCardCounter(target.cards);
         if (maxId >= mobCardCounter) mobCardCounter = maxId;
       }
 
@@ -300,17 +226,6 @@ export function MobileApp() {
   }
 
   // ── Overlap check ──
-  function hasAnyOverlap(cards: CardModel[]) {
-    for (let i = 0; i < cards.length; i++) {
-      const a = cards[i];
-      for (let j = i + 1; j < cards.length; j++) {
-        const b = cards[j];
-        if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) return true;
-      }
-    }
-    return false;
-  }
-
   // ── Save ──
   function handleSave() {
     if (hasAnyOverlap(cardState.cards)) {
@@ -331,8 +246,6 @@ export function MobileApp() {
   }
 
   // ── Deploy ──
-  const PAGE_ROUTES: Record<string, string> = { p1: "gate", p2: "members", p3: "access", p4: "tier-2" };
-
   async function handleDeploy() {
     if (hasAnyOverlap(cardState.cards)) {
       setDeployStatus("⚠ Cannot deploy — overlapping tiles. Move tiles apart first.");
@@ -347,125 +260,28 @@ export function MobileApp() {
     saveProject(full);
     setProject(full);
 
-    // ── Deploy coordinate scaling ──────────────────────────────────────────
-    // Scale mobile pixel coords → native 430×860 mobile canvas.
-    // The gateway uses these coords with `mobile: true` to render absolutely
-    // positioned cards scaled to the device screen width.
-    const MOBILE_DEPLOY_W = 430;
-    const MOBILE_DEPLOY_H = 860;
+    // Build deploy payloads via service
     const actualWsW = workspaceRef.current?.offsetWidth ?? wsDims.width;
     const actualWsH = wsDims.height;
-    const dsx = MOBILE_DEPLOY_W / actualWsW;
-    const dsy = MOBILE_DEPLOY_H / actualWsH;
-    function scaleForDeploy(card: { x: number; y: number; w: number; h: number }) {
-      return {
-        x: Math.round(card.x * dsx),
-        y: Math.round(card.y * dsy),
-        w: Math.round(card.w * dsx),
-        h: Math.round(card.h * dsy),
-      };
-    }
-
-    // Build deploy payload with backend route names as page keys
-    const HOLIDAY_CODES: Record<PageKey, string> = { p1: "w1", p2: "w2", p3: "w4", p4: "w5" };
-
-    function buildPagePayload(pageKey: string, pd: PageData, overrideWallpaperCode?: string) {
-      const wpItem = mobileWallpaperCatalog.find((w) => w.url === pd.wallpaper)
-        ?? wallpaperCatalog.find((w) => w.url === pd.wallpaper);
-      const wallpaper = overrideWallpaperCode ?? wpItem?.code ?? "";
-
-      // p4 (Exclusive): emit wallpaper + exclusive tiles, no block canvas
-      if (pageKey === "p4") {
-        const activeTiles = exclusiveTiles
-          .map((tile, i) => {
-            if (!tile.url && !tile.price && !tile.locked) return null;
-            return {
-              tileNumber: i + 1,
-              contentCode: `EC-${String(i + 1).padStart(3, "0")}`,
-              tileName: `Exclusive Content-${i + 1}`,
-              lockStatus: tile.locked ? "locked" : "unlocked",
-              purchasePrice: tile.price || null,
-              contentUrl: tile.url || null,
-            };
-          })
-          .filter(Boolean);
-        const payload: Record<string, unknown> = {
-          mobile: true,
-          viewport: { width: MOBILE_DEPLOY_W, height: MOBILE_DEPLOY_H },
-          wallpaper,
-        };
-        if (activeTiles.length > 0) payload.exclusiveTiles = activeTiles;
-        return payload;
-      }
-
-      // Build blocks array in the gateway-native format
-      const blocks = pd.cards.map((card) => {
-        const { x, y, w, h } = scaleForDeploy(card);
-        const code = card.contentCode ?? null;
-        const isGif = code && /^g\d+$/i.test(code);
-        const block: Record<string, unknown> = {
-          id: card.id,
-          x, y, w, h,
-          kind: card.contentDisplay === "video" ? "video" : "image",
-          title: card.label ?? "",
-          lines: [],
-        };
-        const isUserUpload = code && /^x\d+$/i.test(code);
-        if (isGif) {
-          block.gif = code;
-        } else if (isUserUpload) {
-          // User-uploaded content: include full URL for gateway resolution
-          block.image = code;
-          block.contentUrl = card.contentUrl || card.contentImage || `https://demo-content.xyz-labs.xyz/tenant-content/${slug}/${code}.png`;
-        } else if (code) {
-          block.image = code;
-        }
-        if (card.contentDisplay === "video" && card.contentUrl) {
-          block.contentUrl = card.contentUrl;
-        } else if (!code && (card.contentImage || card.contentUrl)) {
-          block.contentUrl = card.contentImage || card.contentUrl;
-        }
-        if (card.skinId) block.skin = card.skinId.toLowerCase();
-        if (card.isExclusive) {
-          block.isExclusive = true;
-          block.exclusivePrice = card.exclusivePrice ?? null;
-        }
-        return block;
-      });
-
-      return {
-        mobile: true,
-        viewport: { width: MOBILE_DEPLOY_W, height: MOBILE_DEPLOY_H },
-        wallpaper,
-        blocks,
-      };
-    }
-
-    const mainPayload = {
-      version: 1,
+    const { main: mainPayload, holiday: holidayPayload } = buildMobileDeployBundle(
       slug,
-      mobile: true,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd)])
-      ),
-    };
-
-    const holidayPayload = {
-      version: 1,
-      slug,
-      mobile: true,
-      pages: Object.fromEntries(
-        Object.entries(full.pages).map(([pk, pd]) => [PAGE_ROUTES[pk] ?? pk, buildPagePayload(pk, pd, HOLIDAY_CODES[pk as PageKey])])
-      ),
-    };
+      full.pages,
+      {
+        slug,
+        scaleParams: { actualWsW, actualWsH },
+        wallpaperCatalog,
+        mobileWallpaperCatalog,
+        exclusiveTiles,
+      },
+    );
 
     setDeploying(true);
     setDeployStatus("Deploying...");
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
     setDeploying(false);
     setDeployStatus(null);
-    const primaryUrl = result.primaryUrl ?? `https://gateway.xyz-labs.xyz/${slug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `https://gateway.xyz-labs.xyz/${slug}/holiday`;
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${slug}/gate`;
+    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${slug}/holiday`;
     setDeployModal({ primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }
 
@@ -649,16 +465,8 @@ export function MobileApp() {
   }
 
   // ── Persist user uploads ──
-  useEffect(() => {
-    try {
-      localStorage.setItem("drip-studio:user-uploads", JSON.stringify(userUploads));
-    } catch { /* storage full */ }
-  }, [userUploads]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("drip-studio:upload-counter", String(uploadCounter));
-    } catch { /* storage full */ }
-  }, [uploadCounter]);
+  useEffect(() => { saveUserUploads(userUploads); }, [userUploads]);
+  useEffect(() => { saveUploadCounter(uploadCounter); }, [uploadCounter]);
 
   // ── Mobile photo upload → PNG → R2 with x-designation ──
   async function handleMobilePhotoUpload(file: File) {
@@ -693,43 +501,23 @@ export function MobileApp() {
       // Upload to R2 — update URL if successful
       const sizeKB = (pngBlob.size / 1024).toFixed(0);
       setDeployStatus(`Uploading ${xCode} (${sizeKB} KB)...`);
-      try {
-        const form = new FormData();
-        form.append("file", new File([pngBlob], filename, { type: "image/png" }));
-        form.append("slug", slug);
-        const res = await fetch(UPLOAD_ENDPOINT, { method: "POST", body: form });
-        if (!res.ok && res.status === 404) {
-          setDeployStatus(`Upload failed: /api/upload not found (404) — redeploy Pages`);
-          setTimeout(() => setDeployStatus(null), 5000);
-          return;
-        }
-        const text = await res.text();
-        let data: { ok: boolean; key?: string; error?: string };
-        try { data = JSON.parse(text); } catch {
-          setDeployStatus(`Upload failed: non-JSON response (${res.status}): ${text.slice(0, 80)}`);
-          setTimeout(() => setDeployStatus(null), 5000);
-          return;
-        }
-        if (data.ok) {
-          const remoteUrl = `${DEMO_CONTENT_BASE}/tenant-content/${slug}/${filename}`;
-          setUserUploads((prev) => prev.map((u) => u.code === xCode ? { ...u, url: remoteUrl } : u));
-          setCardState((cur) => ({
-            ...cur,
-            cards: cur.cards.map((c) =>
-              c.contentCode === xCode
-                ? { ...c, contentImage: remoteUrl, contentUrl: remoteUrl }
-                : c
-            ),
-          }));
-          setDeployStatus(`${xCode} uploaded`);
-          setTimeout(() => setDeployStatus(null), 2000);
-        } else {
-          setDeployStatus(`Upload failed: ${data.error ?? res.status}`);
-          setTimeout(() => setDeployStatus(null), 4000);
-        }
-      } catch (err) {
-        setDeployStatus(`Upload error: ${(err as Error).message}`);
-        setTimeout(() => setDeployStatus(null), 5000);
+      const uploadResult = await uploadFile(pngBlob, filename, slug);
+      if (uploadResult.ok && uploadResult.remoteUrl) {
+        const remoteUrl = uploadResult.remoteUrl;
+        setUserUploads((prev) => prev.map((u) => u.code === xCode ? { ...u, url: remoteUrl } : u));
+        setCardState((cur) => ({
+          ...cur,
+          cards: cur.cards.map((c) =>
+            c.contentCode === xCode
+              ? { ...c, contentImage: remoteUrl, contentUrl: remoteUrl }
+              : c
+          ),
+        }));
+        setDeployStatus(`${xCode} uploaded`);
+        setTimeout(() => setDeployStatus(null), 2000);
+      } else {
+        setDeployStatus(`Upload failed: ${uploadResult.error ?? "unknown"}`);
+        setTimeout(() => setDeployStatus(null), 4000);
       }
     } catch (err) {
       setDeployStatus(`Convert error: ${(err as Error).message}`);
