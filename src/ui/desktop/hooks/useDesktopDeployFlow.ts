@@ -34,7 +34,7 @@ export function useDesktopDeployFlow(args: Args) {
       setTimeout(() => args.setDeployStatus(null), 3500);
       return;
     }
-    const currentPageData = cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions);
+    const currentPageData = cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions, args.page === "p4" ? args.exclusiveTiles : undefined);
     const updatedPages = { ...args.project.pages, [args.page]: currentPageData };
     if (args.isGlobalWallpaper) {
       for (const key of Object.keys(updatedPages)) {
@@ -64,7 +64,7 @@ export function useDesktopDeployFlow(args: Args) {
       slug: effectiveSlug,
       pages: {
         ...args.project.pages,
-        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions),
+        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions, args.page === "p4" ? args.exclusiveTiles : undefined),
       },
     };
 
@@ -73,7 +73,7 @@ export function useDesktopDeployFlow(args: Args) {
       scaleParams: { actualWsW: args.workspaceWidth ?? args.layout.workspace.width, actualWsH: args.layout.workspace.height },
       wsHeight: args.layout.workspace.height,
       wallpaperCatalog,
-      exclusiveTiles: args.exclusiveTiles,
+      exclusiveTiles: full.pages.p4?.exclusiveTiles ?? args.exclusiveTiles,
     });
 
     saveProject(full);
@@ -97,7 +97,7 @@ export function useDesktopDeployFlow(args: Args) {
       slug: args.slug,
       pages: {
         ...args.project.pages,
-        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions),
+        [args.page]: cardStateToPageData(args.cardState, args.wallpaper, args.pageInstructions, args.page === "p4" ? args.exclusiveTiles : undefined),
       },
     };
     downloadProjectJson(full);

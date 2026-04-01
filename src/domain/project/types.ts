@@ -56,6 +56,8 @@ export type PageData = {
   lockPosition: boolean;
   lockPage: boolean;
   instructions: string;
+  /** Exclusive content tiles (only meaningful on p4, but always serialized). */
+  exclusiveTiles?: ExclusiveTile[];
 };
 
 // ── Full project (all pages + slug) ──────────────────────────────────────────
@@ -72,6 +74,8 @@ export type ExclusiveTile = {
   url: string;
   price: string;
   locked: boolean;
+  /** Catalog content code (e.g. "c2", "c4444") when tile holds a catalog item. */
+  contentCode?: string;
 };
 
 // ── Deploy result ────────────────────────────────────────────────────────────

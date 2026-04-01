@@ -81,7 +81,7 @@ export function ContentRail(props: {
                     {tile.locked ? <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg> : <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                   </button>
                 </div>
-                <label className="mediaUrlField"><input value={tile.url} onChange={(e) => props.setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: e.target.value.trim() } : t))} placeholder="https://..." /></label>
+                <label className="mediaUrlField"><input value={tile.url} onChange={(e) => props.setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: e.target.value.trim(), contentCode: undefined } : t))} placeholder="https://..." /></label>
                 <input className="exclusivePriceInput" value={tile.price} onChange={(e) => props.setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, price: e.target.value.trim() } : t))} placeholder="Purchase Price" />
               </div>
             ))}

@@ -63,14 +63,19 @@ function serializeExclusiveTiles(tiles: ExclusiveTile[]) {
   return tiles
     .map((tile, i) => {
       if (!tile.url && !tile.price && !tile.locked) return null;
-      return {
+      const out: Record<string, unknown> = {
         tileNumber: i + 1,
-        contentCode: `EC-${String(i + 1).padStart(3, "0")}`,
+        contentCode: tile.contentCode || `EC-${String(i + 1).padStart(3, "0")}`,
         tileName: `Exclusive Content-${i + 1}`,
         lockStatus: tile.locked ? "locked" : "unlocked",
         purchasePrice: tile.price || null,
-        contentUrl: tile.url || null,
       };
+      // Only include contentUrl for non-catalog items (user uploads, external URLs).
+      // Catalog items (c2, c4444, etc.) are resolved by contentCode on the gateway side.
+      if (!tile.contentCode && tile.url) {
+        out.contentUrl = tile.url;
+      }
+      return out;
     })
     .filter(Boolean);
 }

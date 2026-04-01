@@ -42,7 +42,8 @@ export function DesktopWorkspace(props: {
                 if (dragSource === "wallpaper") return;
                 const contentUrl = e.dataTransfer.getData("text/plain");
                 if (!contentUrl) return;
-                props.setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: contentUrl } : t));
+                const code = e.dataTransfer.getData("application/x-content-code") || undefined;
+                props.setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: contentUrl, contentCode: code } : t));
               }}>
                 <div className="exclusiveTilePlaceholderLabel">Placeholder: add image here ({idx + 1})</div>
                 <div className="exclusiveTileImageArea">{tile.url ? <img src={tile.url} alt={`Content ${idx + 1}`} className="exclusiveTileImage" draggable={false} /> : null}</div>
