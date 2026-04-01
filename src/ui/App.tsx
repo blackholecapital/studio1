@@ -1,14 +1,9 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import type { CSSProperties, DragEvent, ChangeEvent } from "react";
-import { wallpaperCatalog, DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
-import { contentCatalog } from "../core/contentCatalog";
-import { skinCatalog } from "../core/skinCatalog";
-import { thumbnailUrl } from "../core/assetResolver";
+import type { CSSProperties, DragEvent } from "react";
+import { DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
 import {
   loadProject,
   saveProject,
-  deployGateway,
-  downloadProjectJson,
 } from "./state/editorExport";
 import { layoutConfig } from "./state/layoutConfig";
 import { useCardInteractions } from "./hooks/useCardInteractions";
@@ -18,15 +13,21 @@ import type { CardModel, CardInteractionState, PageData, ProjectData, ExclusiveT
 import type { PageKey } from "../domain/project/types";
 import { PAGE_KEYS, PAGE_SHORT_TITLES, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, DEFAULT_INSTRUCTIONS, DEFAULT_EXCLUSIVE_TILES, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
 import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
-import { ensureUniqueSlug, sanitizeSlug } from "../domain/editor/actions";
-import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
-import { convertToPng } from "../shared/lib/normalize";
+import { sanitizeSlug } from "../domain/editor/actions";
+import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE } from "../domain/editor/constants";
 
 // Service imports — side-effecting operations
 import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
 import { getOrCreateDesktopSlug } from "../services/runtime/urlState";
-import { buildDesktopDeployBundle } from "../services/deploy/buildPayload";
-import { uploadFile } from "../services/upload/api";
+import { useDesktopDeployFlow } from "./desktop/hooks/useDesktopDeployFlow";
+import { useDesktopUploadFlow } from "./desktop/hooks/useDesktopUploadFlow";
+import { getAllPagesLocked, getPageNavigation, getSelectedCard } from "./desktop/lib/derivedState";
+import { deleteSelectedCardState, patchSelectedCard, setSelectedCardLockPosition, setSelectedCardLockSize, togglePageLockState } from "./desktop/state/desktopReducers";
+import { DesktopAppShell } from "./desktop/DesktopAppShell";
+import { DesktopTopBar } from "./desktop/sections/DesktopTopBar";
+import { WallpaperRail } from "./desktop/panels/WallpaperRail";
+import { DesktopWorkspace } from "./desktop/sections/DesktopWorkspace";
+import { ContentRail } from "./desktop/panels/ContentRail";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
@@ -35,15 +36,6 @@ const pages: Array<{ key: PageKey; label: string }> = PAGE_KEYS.map((key) => ({
   key,
   label: PAGE_SHORT_TITLES[key],
 }));
-
-const rightRailTabs: Array<{ key: SurfaceTab; label: string }> = [
-  { key: "content", label: "Content" },
-  { key: "exclusive", label: "Exclusive Content" },
-  { key: "media", label: "Media" },
-  { key: "skins", label: "Skins" }
-];
-
-const LEFT_RAIL_TABS: LeftRailTab[] = ["wallpaper", "pages"];
 
 const TOOLTIP_HELP: Record<string, string[]> = {
   wallpaper: ["Select background", "Tap to cycle styles", "Applies to workspace"],
@@ -107,7 +99,6 @@ export function App() {
   const [leftMode, setLeftMode] = useState<"create" | "gateway">("create");
   const [leftRailTab, setLeftRailTab] = useState<LeftRailTab>("wallpaper");
   const [tooltipOpen, setTooltipOpen] = useState<string | null>(null);
-  const [pageDropOpen, setPageDropOpen] = useState(false);
   const [exclusiveTiles, setExclusiveTiles] = useState<ExclusiveTile[]>([...DEFAULT_EXCLUSIVE_TILES]);
   const [uploadedContents, setUploadedContents] = useState<Array<{ name: string; url: string; code: string }>>([]);
   const contentFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -266,10 +257,7 @@ export function App() {
     handleResizePointerDown
   } = useCardInteractions({ cardState, setCardState, layoutConfig });
 
-  const selectedCard = useMemo(
-    () => cardState.cards.find((c) => c.id === cardState.selectedCardId) ?? cardState.cards[0] ?? null,
-    [cardState.cards, cardState.selectedCardId]
-  );
+  const selectedCard = useMemo(() => getSelectedCard(cardState), [cardState]);
   const selectedCardLockSize = selectedCard?.lockSize ?? false;
   const selectedCardLockPosition = selectedCard?.lockPosition ?? false;
 
@@ -413,34 +401,17 @@ export function App() {
   // ── Card operations ──
   function updateSelectedCard(patch: Partial<CardModel>) {
     if (!selectedCard || cardState.lockPage) return;
-    setCardState((current) => ({
-      ...current,
-      cards: current.cards.map((card) =>
-        card.id === selectedCard.id ? { ...card, ...patch } : card
-      )
-    }));
+    setCardState((current) => patchSelectedCard(current, selectedCard.id, patch));
   }
 
   function setLockSize(next: boolean) {
     activeResizeCardIdRef.current = null;
-    setCardState((current) => ({
-      ...current,
-      lockSize: next,
-      cards: current.cards.map((c) =>
-        c.id === current.selectedCardId ? { ...c, lockSize: next } : c
-      )
-    }));
+    setCardState((current) => setSelectedCardLockSize(current, next));
   }
 
   function setLockPosition(next: boolean) {
     activeDragCardIdRef.current = null;
-    setCardState((current) => ({
-      ...current,
-      lockPosition: next,
-      cards: current.cards.map((c) =>
-        c.id === current.selectedCardId ? { ...c, lockPosition: next } : c
-      )
-    }));
+    setCardState((current) => setSelectedCardLockPosition(current, next));
   }
 
   function toggleLockPage() {
@@ -449,20 +420,7 @@ export function App() {
       setTimeout(() => setDeployStatus(null), 3500);
       return;
     }
-    setCardState((current) => {
-      const next = !current.lockPage;
-      return {
-        ...current,
-        lockPage: next,
-        lockSize: next ? true : current.lockSize,
-        lockPosition: next ? true : current.lockPosition,
-        cards: current.cards.map((c) => ({
-          ...c,
-          lockSize: next ? true : c.lockSize,
-          lockPosition: next ? true : c.lockPosition
-        }))
-      };
-    });
+    setCardState((current) => togglePageLockState(current));
     if (!cardState.lockPage) {
       activeResizeCardIdRef.current = null;
       activeDragCardIdRef.current = null;
@@ -548,13 +506,8 @@ export function App() {
     }));
   }
 
-  const allPagesLocked = useMemo(
-    () => PAGE_KEYS.every((k) => (k === page ? cardState.lockPage : (project.pages[k]?.lockPage ?? false))),
-    [page, cardState.lockPage, project.pages]
-  );
-  const pageIndex = PAGE_KEYS.indexOf(page);
-  const canGoPrevPage = pageIndex > 0;
-  const canGoNextPage = pageIndex < PAGE_KEYS.length - 1;
+  const allPagesLocked = useMemo(() => getAllPagesLocked(project, page, cardState), [project, page, cardState]);
+  const { pageIndex, canGoPrevPage, canGoNextPage } = useMemo(() => getPageNavigation(page), [page]);
 
   function goPrevPage() {
     if (!canGoPrevPage) return;
@@ -705,46 +658,10 @@ export function App() {
 
   function deleteSelectedCard() {
     if (!selectedCard || cardState.lockPage) return;
-    setCardState((current) => {
-      const remaining = current.cards.filter((c) => c.id !== current.selectedCardId);
-      return {
-        ...current,
-        cards: remaining,
-        selectedCardId: remaining.length > 0 ? remaining[remaining.length - 1].id : ""
-      };
-    });
+    setCardState((current) => deleteSelectedCardState(current));
   }
 
-  async function handleContentFileUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      window.alert("File must be 5MB or less.");
-      e.target.value = "";
-      return;
-    }
-    // Blob URL for immediate studio preview
-    const objectUrl = URL.createObjectURL(file);
-    uploadCounterRef.current += 1;
-    const xn = uploadCounterRef.current;
-    const code = `x${String(xn).padStart(3, "0")}`;
-    const filename = `${code}.png`;
-
-    // Optimistically add with blob URL; upload to demo-bucket in background
-    setUploadedContents((prev) => [...prev, { name: code, url: objectUrl, code }]);
-    e.target.value = "";
-
-    try {
-      // Convert to PNG via canvas (shared utility)
-      const pngBlob = await convertToPng(file);
-      const result = await uploadFile(pngBlob, filename, slug);
-      if (result.ok && result.remoteUrl) {
-        setUploadedContents((prev) => prev.map((u) => u.code === code ? { ...u, url: result.remoteUrl! } : u));
-      }
-    } catch {
-      // Upload failure is non-fatal for studio preview; code is still set
-    }
-  }
+  const { handleContentFileUpload } = useDesktopUploadFlow(slug, uploadCounterRef, setUploadedContents);
 
   const handleContentDragStart = useCallback((e: DragEvent, contentUrl: string, contentCode?: string) => {
     e.dataTransfer.setData("text/plain", contentUrl);
@@ -842,101 +759,24 @@ export function App() {
     e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  // ── Save (local JSON) ──
-  function handleSave() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot save — overlapping tiles detected. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3500);
-      return;
-    }
-    const currentPageData = cardStateToPageData(cardState, wallpaper, pageInstructions);
-    let updatedPages = { ...project.pages, [page]: currentPageData };
-    if (isGlobalWallpaper) {
-      for (const key of Object.keys(updatedPages)) {
-        updatedPages[key] = { ...updatedPages[key], wallpaper };
-      }
-    }
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: updatedPages
-    };
-    const serialized = saveProject(full);
-    setProject(full);
-    setIsSaved(true);
-    setDeployStatus("Saved locally");
-    setTimeout(() => setDeployStatus(null), 2000);
-    console.info("Saved project JSON", serialized);
-  }
-
-  // ── Deploy to R2 ──
-  async function handleDeployGateway() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot deploy — overlapping tiles detected. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3500);
-      return;
-    }
-    const effectiveSlug = ensureUniqueSlug(slug);
-    if (effectiveSlug !== slug) {
-      setSlug(effectiveSlug);
-    }
-
-    const full: ProjectData = {
-      ...project,
-      slug: effectiveSlug,
-      pages: {
-        ...project.pages,
-        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
-      }
-    };
-
-    // Build deploy payloads via service
-    const actualWsW = workspaceRef.current?.offsetWidth ?? layoutConfig.workspace.width;
-    const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(
-      effectiveSlug,
-      full.pages,
-      {
-        slug: effectiveSlug,
-        scaleParams: { actualWsW, actualWsH: layoutConfig.workspace.height },
-        wsHeight: layoutConfig.workspace.height,
-        wallpaperCatalog,
-        exclusiveTiles,
-      },
-    );
-
-    // Always save locally first
-    saveProject(full);
-    setProject(full);
-    setIsSaved(false);
-
-    setDeploying(true);
-    setDeployStatus("Deploying...");
-
-    const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
-
-    setDeploying(false);
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/holiday`;
-    if (result.ok) {
-      setDeployStatus(null);
-    } else {
-      console.error("[deploy] failed:", result.error);
-    }
-    setDeployModal({ slug: effectiveSlug, primaryUrl, holidayUrl, ok: result.ok, error: result.error });
-  }
-
-  // ── Download JSON ──
-  function handleDownload() {
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: {
-        ...project.pages,
-        [page]: cardStateToPageData(cardState, wallpaper, pageInstructions)
-      }
-    };
-    downloadProjectJson(full);
-  }
+  const { handleSave, handleDeployGateway, handleDownload } = useDesktopDeployFlow({
+    slug,
+    setSlug,
+    page,
+    project,
+    cardState,
+    wallpaper,
+    pageInstructions,
+    isGlobalWallpaper,
+    layout: layoutConfig,
+    workspaceWidth: workspaceRef.current?.offsetWidth,
+    exclusiveTiles,
+    setDeploying,
+    setDeployStatus,
+    setProject,
+    setIsSaved,
+    setDeployModal,
+  });
 
   const shellLayoutStyle = {
     "--studio-wallpaper": `url(${wallpaper})`,
@@ -966,79 +806,102 @@ export function App() {
   }, [activeTab]);
 
   return (
-    <div className="studioApp" style={shellLayoutStyle} onClick={() => tooltipOpen && setTooltipOpen(null)}>
-      <header className="topStrip glassPanel">
-        <div className="topStripLeft">
-          <span className="brandMark">Drip Studio V8</span>
-          <div className="cubeButtonsHeader">
-            <button className="cubeButton cubeButtonHeader cubeButtonOne" onClick={() => applyCubeLayout(1)} aria-label="Add 1 cube"><span className="cubeDot" /></button>
-            <button className="cubeButton cubeButtonHeader cubeButtonTwo" onClick={() => applyCubeLayout(2)} aria-label="Add 2 cubes"><span className="cubeDot" /><span className="cubeDot" /></button>
-            <button className="cubeButton cubeButtonHeader cubeButtonThree" onClick={() => applyCubeLayout(3)} aria-label="Add 3 cubes"><span className="cubeDot" /><span className="cubeDot" /><span className="cubeDot" /></button>
-            <button className="cubeButton cubeButtonHeader cubeButtonFour" onClick={() => applyCubeLayout(4)} aria-label="Add 4 cubes"><span className="cubeDot" /><span className="cubeDot" /><span className="cubeDot" /><span className="cubeDot" /></button>
-          </div>
-        </div>
-        <div className="topStripCenter">
-          <button className="pageNavArrowBtn" onClick={goPrevPage} disabled={!canGoPrevPage} title="Previous page">
-            <svg viewBox="0 0 10 16" width="11" height="17" fill="none">
-              <path d="M8 2L2 8l6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button className="pageNavArrowBtn" onClick={goNextPage} disabled={!canGoNextPage} title="Next page">
-            <svg viewBox="0 0 10 16" width="11" height="17" fill="none">
-              <path d="M2 2l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <span className="topStripTitle">{PAGE_SHORT_TITLES[page]}</span>
-          <button className="pageNavCardBtn pageNavCardBtnAdd" onClick={addCard} disabled={cardState.lockPage} title="Add card">
-            <svg viewBox="0 0 14 14" width="14" height="14" fill="none">
-              <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
-          <button className="pageNavCardBtn pageNavCardBtnDelete" onClick={deleteSelectedCard} disabled={!selectedCard || cardState.lockPage} title="Delete selected card">
-            <svg viewBox="0 0 14 14" width="14" height="14" fill="none">
-              <path d="M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
-        </div>
-        <div className="topStripRight">
-          <span className="topStripIdLabel">ID</span>
-          <input
-            className="topStripIdInput"
-            value={slug}
-            onChange={(e) => handleSlugChange(e.target.value || "user")}
-          />
-          <button className={`topStripSaveBtn ${isSaved ? "isSavedState" : ""}`} onClick={handleSave}>
-            SAVE
-          </button>
-          <div className="topStripHelpWrap">
-            <button
-              className="topStripHelpBtn"
-              onClick={(e) => { e.stopPropagation(); setTooltipOpen(tooltipOpen === "deploy-help" ? null : "deploy-help"); }}
-              title="Help"
-            >?</button>
-            {tooltipOpen === "deploy-help" && (
-              <div className="tooltipCard tooltipCardDeploy">
-                <div className="tooltipLine">Position your tiles</div>
-                <div className="tooltipLine">Add your content</div>
-                <div className="tooltipLine">Save</div>
-                <div className="tooltipLine">Deploy Gateway</div>
-                <div className="tooltipLine">Links pop up for your live 24-hour demo</div>
-              </div>
-            )}
-          </div>
-          <button
-            className={`pillButton walletButton isPrimary ${isSaved ? "isReadyToDeploy" : ""}`}
-            onClick={handleDeployGateway}
-            disabled={deploying}
-          >
-            {deploying ? "Deploying..." : "Deploy Gateway"}
-          </button>
-        </div>
-      </header>
-
-      {deployStatus && (
-        <div className={`deployStatusBanner ${deployStatus?.includes("⚠") ? "isWarning" : ""}`}>{deployStatus}</div>
+    <DesktopAppShell
+      shellLayoutStyle={shellLayoutStyle}
+      tooltipOpen={tooltipOpen}
+      setTooltipOpen={setTooltipOpen}
+      deployStatus={deployStatus}
+      topBar={(
+        <DesktopTopBar
+          applyCubeLayout={applyCubeLayout}
+          canGoPrevPage={canGoPrevPage}
+          canGoNextPage={canGoNextPage}
+          goPrevPage={goPrevPage}
+          goNextPage={goNextPage}
+          pageTitle={PAGE_SHORT_TITLES[page]}
+          addCard={addCard}
+          deleteSelectedCard={deleteSelectedCard}
+          isPageLocked={cardState.lockPage}
+          hasSelectedCard={!!selectedCard}
+          slug={slug}
+          onSlugChange={handleSlugChange}
+          isSaved={isSaved}
+          onSave={handleSave}
+          tooltipOpen={tooltipOpen}
+          setTooltipOpen={setTooltipOpen}
+          onDeploy={handleDeployGateway}
+          deploying={deploying}
+        />
       )}
+      leftRail={(
+        <WallpaperRail
+          leftRailTab={leftRailTab}
+          setLeftRailTab={setLeftRailTab}
+          leftMode={leftMode}
+          setLeftMode={setLeftMode}
+          tooltipOpen={tooltipOpen}
+          setTooltipOpen={setTooltipOpen}
+          tooltipHelp={TOOLTIP_HELP}
+          wallpaper={wallpaper}
+          isPageLocked={cardState.lockPage}
+          setWallpaper={setWallpaper}
+          setWallpaperPreview={setWallpaperPreview}
+          pages={pages}
+          page={page}
+          cardState={cardState}
+          project={project}
+          switchPage={switchPage}
+          togglePageLock={togglePageLock}
+          allPagesLocked={allPagesLocked}
+          lockAllPages={lockAllPages}
+          unlockAllPages={unlockAllPages}
+          resetWorkspace={resetWorkspace}
+        />
+      )}
+      workspace={(
+        <DesktopWorkspace
+          workspaceRef={workspaceRef}
+          page={page}
+          exclusiveTiles={exclusiveTiles}
+          setExclusiveTiles={setExclusiveTiles}
+          cardState={cardState}
+          setCardState={setCardState}
+          wallpaperPreview={wallpaperPreview}
+          workspaceUrlPreview={workspaceUrlPreview}
+          overlappingCardIds={overlappingCardIds}
+          pageInstructions={pageInstructions}
+          handleCardPointerDown={handleCardPointerDown}
+          handleCardDrop={handleCardDrop}
+          handleCardDragOver={handleCardDragOver}
+          handleResizePointerDown={handleResizePointerDown}
+        />
+      )}
+      rightRail={(
+        <ContentRail
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          tooltipOpen={tooltipOpen}
+          setTooltipOpen={setTooltipOpen}
+          tooltipHelp={TOOLTIP_HELP}
+          railScrollRef={railScrollRef}
+          handleRailScroll={handleRailScroll}
+          contentFileInputRef={contentFileInputRef}
+          handleContentFileUpload={handleContentFileUpload}
+          uploadedContents={uploadedContents}
+          handleContentDragStart={handleContentDragStart}
+          exclusiveTiles={exclusiveTiles}
+          setExclusiveTiles={setExclusiveTiles}
+          mediaTiles={mediaTiles}
+          visibleMediaCount={visibleMediaCount}
+          cardStateLocked={cardState.lockPage}
+          mediaUrls={mediaUrls}
+          setMediaUrls={setMediaUrls}
+          handleMediaDragStart={handleMediaDragStart}
+          setWorkspaceUrlPreview={setWorkspaceUrlPreview}
+          handleSkinDragStart={handleSkinDragStart}
+        />
+      )}
+    >
 
       {/* ══ DEPLOY MODAL ══ */}
       {deployModal && (() => {
@@ -1098,467 +961,6 @@ export function App() {
           </div>
         );
       })()}
-
-      <aside className="leftRail">
-        {/* ══ LEFT RAIL HEADER ══ */}
-        <div className="railHeader">
-          <button
-            className="railHeaderBtn"
-            onClick={() => {
-              const next = LEFT_RAIL_TABS[(LEFT_RAIL_TABS.indexOf(leftRailTab) + 1) % LEFT_RAIL_TABS.length];
-              setLeftRailTab(next);
-              setLeftMode(next === "wallpaper" ? "create" : "gateway");
-              if (next === "pages") setPageDropOpen(true);
-              else setPageDropOpen(false);
-            }}
-          >
-            {leftRailTab === "wallpaper" ? "Wallpaper" : "Pages"}
-          </button>
-          <button
-            className="railHelpBtn"
-            onClick={(e) => { e.stopPropagation(); setTooltipOpen(tooltipOpen === leftRailTab ? null : leftRailTab); }}
-            title="Help"
-          >?</button>
-          {tooltipOpen === leftRailTab && (
-            <div className="tooltipCard">
-              {(TOOLTIP_HELP[leftRailTab] ?? []).map((line, i) => <div key={i} className="tooltipLine">{line}</div>)}
-            </div>
-          )}
-        </div>
-
-        {/* ══ CREATE PANEL ══ */}
-        {leftMode === "create" && (
-          <>
-            <div className="railScrollRegion">
-              <section className="wallpaperTray" aria-label="Wallpaper picker">
-                {wallpaperCatalog.map((item) => (
-                  <button
-                    key={item.code}
-                    className={`wallpaperThumb ${wallpaper === item.url ? "isActive" : ""}`}
-                    onClick={() => { if (cardState.lockPage) return; setWallpaper(item.url); setWallpaperPreview(null); }}
-                    title={item.code}
-                  >
-                    <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
-                  </button>
-                ))}
-              </section>
-            </div>
-          </>
-        )}
-
-        {/* ══ GATEWAY PANEL ══ */}
-        {leftMode === "gateway" && (
-          <>
-            {/* Always-visible page selector */}
-            <div className="leftRailTabList">
-              {pages.map((item) => {
-                const isCurrentPage = page === item.key;
-                const pd = isCurrentPage ? cardState : pageDataToCardState(project.pages[item.key] ?? makeEmptyPage());
-                const isLocked = pd.lockPage;
-                return (
-                  <div key={item.key} className="leftRailPageRow">
-                    <button
-                      className={`leftRailTabBtn leftRailTabBtnFlex ${isCurrentPage ? "isActive" : ""} ${isLocked ? "isPageLocked" : ""}`}
-                      onClick={() => { switchPage(item.key); }}
-                    >
-                      {item.label}
-                    </button>
-                    <button
-                      className={`cardLockBtn ${isLocked ? "isLocked" : "isUnlocked"}`}
-                      onClick={(e) => { e.stopPropagation(); togglePageLock(item.key); }}
-                      title={isLocked ? "Unlock page" : "Lock page"}
-                    >
-                      {isLocked ? (
-                        <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                          <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                          <path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                          <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                          <path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-              <button
-                className={`leftRailTabBtn ${allPagesLocked ? "isPageLocked" : ""}`}
-                onClick={allPagesLocked ? unlockAllPages : lockAllPages}
-              >
-                {allPagesLocked ? "Unlock All Pages" : "Lock All Pages"}
-              </button>
-              <button className="leftRailTabBtn" onClick={resetWorkspace}>
-                Reset
-              </button>
-            </div>
-
-            {/* XYZ Labs sticker — pushed to bottom */}
-            <div className="gatewayInfoCard gatewayInfoCardBottom">
-              <img
-                src={LEFT_AD_IMAGE}
-                alt="XYZ Labs"
-                className="gatewayInfoImage"
-                draggable={false}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            </div>
-          </>
-        )}
-      </aside>
-
-      <section
-        className="workspaceShell"
-        ref={workspaceRef}
-      >
-        <div className="workspaceTint" />
-
-        {/* ══ EXCLUSIVE PAGE WORKSPACE (p4) ══ */}
-        {page === "p4" && (
-          <div className="exclusiveWorkspace">
-            <div className="exclusiveWorkspaceHeader">
-              <div className="exclusiveWorkspaceTitle">Exclusive Content</div>
-              <div className="exclusiveWorkspaceDesc">Add content or media link, add price, and lock to make item purchaseable in the exclusive content area. Unlock to make it available for free.</div>
-            </div>
-            <div className="exclusiveWorkspaceGrid">
-              {exclusiveTiles.map((tile, idx) => (
-                <div
-                  key={idx}
-                  className="exclusiveWorkspaceTile"
-                  onDragOver={(e) => {
-                    const types = e.dataTransfer.types;
-                    if (types.includes("application/x-wallpaper")) return;
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "copy";
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (cardState.lockPage) return;
-                    const dragSource = e.dataTransfer.getData("application/x-drag-source");
-                    if (dragSource === "wallpaper") return;
-                    const contentUrl = e.dataTransfer.getData("text/plain");
-                    if (!contentUrl) return;
-                    setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: contentUrl } : t));
-                  }}
-                >
-                  <div className="exclusiveTilePlaceholderLabel">Placeholder: add image here ({idx + 1})</div>
-                  <div className="exclusiveTileImageArea">
-                    {tile.url ? (
-                      <img src={tile.url} alt={`Content ${idx + 1}`} className="exclusiveTileImage" draggable={false} />
-                    ) : null}
-                  </div>
-                  <div className="exclusiveTileCenter">
-                    <button
-                      className={`exclusiveTileLockBtn ${tile.locked ? "isLocked" : "isUnlocked"}`}
-                      onClick={() => { if (cardState.lockPage) return; setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, locked: !t.locked } : t)); }}
-                      title={cardState.lockPage ? "Page is locked" : tile.locked ? "Unlock tile" : "Lock tile"}
-                      disabled={cardState.lockPage}
-                    >
-                      {tile.locked ? (
-                        <svg viewBox="0 0 26 26" width="28" height="28" fill="none">
-                          <circle cx="13" cy="13" r="12" stroke="currentColor" strokeWidth="1.5" fill="rgba(0,0,0,0.25)"/>
-                          <rect x="7.5" y="12" width="11" height="8" rx="1.5" fill="currentColor"/>
-                          <path d="M10 12V9.5a3 3 0 0 1 6 0V12" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 26 26" width="28" height="28" fill="none">
-                          <circle cx="13" cy="13" r="12" stroke="currentColor" strokeWidth="1.5" fill="rgba(0,0,0,0.25)"/>
-                          <rect x="7.5" y="12" width="11" height="8" rx="1.5" fill="currentColor"/>
-                          <path d="M10 12V9a3 3 0 0 1 6 0" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                        </svg>
-                      )}
-                    </button>
-                    <div className="exclusiveTilePriceRow">
-                      <span className={`exclusiveTilePriceLabel ${tile.locked ? "isPaid" : "isFree"}`}>
-                        {tile.locked ? "Paid" : "Free"}
-                      </span>
-                      <input
-                        className={`exclusiveTilePriceInput ${!tile.locked ? "isFree" : ""}`}
-                        value={tile.locked ? tile.price : ""}
-                        onChange={(e) => tile.locked && setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, price: e.target.value } : t))}
-                        placeholder={tile.locked ? "$1.00" : "Free"}
-                        disabled={!tile.locked || cardState.lockPage}
-                      />
-                    </div>
-                  </div>
-                  <div className="exclusiveTileTitle">Exclusive Content-{idx + 1}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {wallpaperPreview && (
-          <div
-            className="wallpaperPreviewOverlay"
-            style={{ backgroundImage: `url(${wallpaperPreview})` }}
-          />
-        )}
-        {workspaceUrlPreview && (
-          <div className="workspaceUrlDragPreview">
-            <span>Media URL Preview</span>
-            <p>{workspaceUrlPreview}</p>
-          </div>
-        )}
-        {page !== "p4" && cardState.cards.map((card) => {
-          const isSelected = card.id === cardState.selectedCardId;
-          const isOverlapping = overlappingCardIds.has(card.id);
-
-          return (
-            <button
-              key={card.id}
-              className={`floatingCard ${isSelected ? "isSelected" : ""} ${card.lockPosition ? "isPositionLocked" : ""} ${isOverlapping ? "isOverlapping" : ""} ${cardState.lockPage ? "isPageLocked" : ""}`}
-              style={{
-                left: card.x,
-                top: card.y,
-                width: card.w,
-                height: card.h,
-                zIndex: card.zIndex ?? 1
-              }}
-              onPointerDown={(e) => {
-                if (cardState.lockPage) return;
-                const maxZ = cardState.cards.reduce((max, c) => Math.max(max, c.zIndex ?? 1), 1);
-                setCardState((current) => ({
-                  ...current,
-                  selectedCardId: card.id,
-                  lockSize: card.lockSize ?? false,
-                  lockPosition: card.lockPosition ?? false,
-                  cards: current.cards.map((c) =>
-                    c.id === card.id ? { ...c, zIndex: maxZ + 1 } : c
-                  )
-                }));
-                handleCardPointerDown(e, card.id);
-              }}
-              onDrop={(e) => handleCardDrop(e, card.id)}
-              onDragOver={handleCardDragOver}
-            >
-              {card.contentDisplay === "video" && card.contentUrl ? (
-                <video
-                  className="cardContentImage"
-                  src={card.contentUrl}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls={false}
-                />
-              ) : card.contentDisplay === "url" && card.contentUrl ? (
-                <div className="cardUrlPreview">
-                  <span>Media URL Preview</span>
-                  <p>{card.contentUrl}</p>
-                </div>
-              ) : card.contentImage || card.contentUrl ? (
-                <img
-                  className={`cardContentImage${card.contentCode === "c5555" ? " isDefaultImage" : ""}`}
-                  src={card.contentImage || card.contentUrl}
-                  alt="content"
-                  draggable={false}
-                />
-              ) : (
-                <div className="cardInstructions">
-                  {pageInstructions.split("\n").map((line, idx) => (
-                    <p key={`${card.id}-${idx}`}>{line}</p>
-                  ))}
-                </div>
-              )}
-
-              {card.skinId && (
-                <div className={`cardSkin skin-${card.skinId.toLowerCase()}`} />
-              )}
-
-              {card.isExclusive && (
-                <div className="exclusiveLockOverlay">
-                  <span className="exclusiveLockLabel">Click to Buy</span>
-                  {card.exclusivePrice && <span className="exclusivePriceTag">{card.exclusivePrice}</span>}
-                </div>
-              )}
-
-              {/* Top-left: Combined padlock (locks both size AND position) */}
-              {!cardState.lockPage && (
-                <div className="cardTopLeftControls">
-                  <button
-                    className={`cardLockBtn ${(card.lockSize && card.lockPosition) ? "isLocked" : "isUnlocked"}`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newLocked = !(card.lockSize && card.lockPosition);
-                      setCardState((current) => ({
-                        ...current,
-                        cards: current.cards.map((c) =>
-                          c.id === card.id ? { ...c, lockSize: newLocked, lockPosition: newLocked } : c
-                        )
-                      }));
-                    }}
-                    title={(card.lockSize && card.lockPosition) ? "Unlock card" : "Lock card"}
-                  >
-                    {(card.lockSize && card.lockPosition) ? (
-                      <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                        <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                        <path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                        <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                        <path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Bottom-right: size badge + resize handle */}
-              <div className="cardBottomRightControls">
-                <div className="cardBottomRightBtns">
-                  <span className="cardSizeBadge">{Math.round(card.w)} × {Math.round(card.h)}</span>
-                  <span
-                    className={`resizeHandle ${(card.lockSize && card.lockPosition) ? "isLocked" : ""}`}
-                    onPointerDown={(e) => handleResizePointerDown(e, card.id)}
-                  />
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </section>
-
-      <aside className="rightRail">
-        {/* ══ RIGHT RAIL HEADER ══ */}
-        <div className="railHeader">
-          <button
-            className="railHeaderBtn"
-            onClick={() => {
-              const order: SurfaceTab[] = ["content", "exclusive", "media", "skins"];
-              const idx = order.indexOf(activeTab);
-              setActiveTab(order[(idx + 1) % order.length]);
-            }}
-          >
-            {activeTab === "content" ? "Content" : activeTab === "exclusive" ? "Exclusive" : activeTab === "media" ? "Media" : "Skins"}
-          </button>
-          <button
-            className="railHelpBtn"
-            onClick={(e) => { e.stopPropagation(); setTooltipOpen(tooltipOpen === `right-${activeTab}` ? null : `right-${activeTab}`); }}
-            title="Help"
-          >?</button>
-          {tooltipOpen === `right-${activeTab}` && (
-            <div className="tooltipCard">
-              {(TOOLTIP_HELP[activeTab] ?? []).map((line, i) => <div key={i} className="tooltipLine">{line}</div>)}
-            </div>
-          )}
-        </div>
-
-        {/* ══ RIGHT RAIL SCROLLABLE CONTENT ══ */}
-        <div className="railScrollRegion" ref={railScrollRef} onScroll={handleRailScroll}>
-          <input
-            ref={contentFileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            style={{ display: "none" }}
-            onChange={handleContentFileUpload}
-          />
-
-          {activeTab === "content" && (
-            <section className="contentTray" aria-label="Content picker">
-              {uploadedContents.map((item) => (
-                <div key={item.url} className="contentThumb contentThumbUploaded" draggable onDragStart={(e) => handleContentDragStart(e, item.url, item.code)} title={item.name}>
-                  <img src={item.url} alt={item.name} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                </div>
-              ))}
-              {contentCatalog.map((item) => (
-                <div key={item.code} className="contentThumb" draggable onDragStart={(e) => handleContentDragStart(e, item.url, item.code)} title={item.code}>
-                  <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                </div>
-              ))}
-            </section>
-          )}
-
-          {activeTab === "exclusive" && (
-            <section className="mediaTray exclusiveRailTray" aria-label="Exclusive content">
-              {exclusiveTiles.map((tile, idx) => (
-                <div key={idx} className="mediaTile exclusiveRailTile">
-                  <div className="exclusiveRailTileHeader">
-                    <span className="exclusiveRailTileNum">Exclusive Content-{idx + 1}</span>
-                    <button
-                      className={`cardLockBtn ${tile.locked ? "isLocked" : "isUnlocked"}`}
-                      onClick={() => setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, locked: !t.locked } : t))}
-                      title={tile.locked ? "Unlock tile" : "Lock tile"}
-                    >
-                      {tile.locked ? (
-                        <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                          <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                          <path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                        </svg>
-                      ) : (
-                        <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
-                          <rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/>
-                          <path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  <label className="mediaUrlField">
-                    <input
-                      value={tile.url}
-                      onChange={(e) => setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, url: e.target.value.trim() } : t))}
-                      placeholder="https://..."
-                    />
-                  </label>
-                  <input
-                    className="exclusivePriceInput"
-                    value={tile.price}
-                    onChange={(e) => setExclusiveTiles((prev) => prev.map((t, i) => i === idx ? { ...t, price: e.target.value.trim() } : t))}
-                    placeholder="Purchase Price"
-                  />
-                </div>
-              ))}
-            </section>
-          )}
-
-          {activeTab === "media" && (
-            <section className="mediaTray" aria-label="Media picker">
-              {mediaTiles.slice(0, visibleMediaCount).map((item) => (
-                <div key={item.id} className="mediaTile">
-                  <div
-                    className="mediaPreview"
-                    draggable={!cardState.lockPage && !!mediaUrls[item.id]}
-                    onDragStart={(e) => { if (!mediaUrls[item.id]) return; handleMediaDragStart(e, mediaUrls[item.id], item.type); }}
-                    onDragEnd={() => setWorkspaceUrlPreview(null)}
-                  >
-                    <img className="mediaPreviewLogo" src="/stickers/xyzlabs.png" alt="XYZ Labs" draggable={false} />
-                  </div>
-                  <label className="mediaUrlField">
-                    <input value={mediaUrls[item.id]} onChange={(e) => setMediaUrls((prev) => ({ ...prev, [item.id]: e.target.value.trim() }))} placeholder={item.placeholder} disabled={cardState.lockPage} />
-                  </label>
-                  <button className="pillButton" disabled>{item.buttonLabel}</button>
-                </div>
-              ))}
-            </section>
-          )}
-
-          {activeTab === "skins" && (
-            <section className="skinTray" aria-label="Skin picker">
-              {skinCatalog.map((skin) => (
-                <div key={skin.id} className="skinThumb" draggable={!cardState.lockPage} onDragStart={(e) => handleSkinDragStart(e as unknown as DragEvent, skin.id)} title={skin.name}>
-                  <img src={thumbnailUrl(skin.thumbnail)} alt={skin.name} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                  <span className="skinThumbLabel">{skin.name}</span>
-                </div>
-              ))}
-            </section>
-          )}
-        </div>
-
-        {/* ══ XYZ LABS LOGO ══ */}
-        <div className="rightRailLogoSection">
-          <img
-            src={LEFT_AD_IMAGE}
-            alt="XYZ Labs"
-            className="rightRailLogoImage"
-            draggable={false}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        </div>
-      </aside>
 
       {/* ══ GHOST FLOW OVERLAY (4 steps) ══ */}
       {ghostStep !== null && ghostStep >= 1 && (
@@ -1632,6 +1034,6 @@ export function App() {
           )}
         </div>
       )}
-    </div>
+    </DesktopAppShell>
   );
 }
