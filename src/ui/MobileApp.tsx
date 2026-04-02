@@ -1,80 +1,33 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import "./mobile.css";
-import { wallpaperCatalog } from "../core/wallpaperCatalog";
-import { mobileWallpaperCatalog, DEFAULT_MOBILE_WALLPAPER_URL } from "../core/mobileWallpaperCatalog";
-import { thumbnailUrl, MEDIA_BASE } from "../core/assetResolver";
-import { contentCatalog, type ContentItem } from "../core/contentCatalog";
+import { mobileWallpaperCatalog } from "../core/mobileWallpaperCatalog";
+import { thumbnailUrl } from "../core/assetResolver";
+import { contentCatalog } from "../core/contentCatalog";
 import { skinCatalog } from "../core/skinCatalog";
-import {
-  loadProject,
-  saveProject,
-  deployGateway,
-} from "./state/editorExport";
+import { loadProject } from "./state/editorExport";
 import { useCardInteractions } from "./hooks/useCardInteractions";
 
-// Domain imports — shared types, constants, selectors, actions
-import type { CardModel, CardInteractionState, PageData, ProjectData } from "../domain/project/types";
+// Domain imports
+import type { CardInteractionState, ProjectData } from "../domain/project/types";
 import type { PageKey } from "../domain/project/types";
-import { PAGE_KEYS, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
-import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
-import { MOB_NAV_H, MOBILE_DEPLOY_W, MOBILE_DEPLOY_H, MOBILE_INSTRUCTIONS_IMAGE, UPLOAD_ENDPOINT, DEMO_CONTENT_BASE, GATEWAY_BASE } from "../domain/editor/constants";
-import { convertToPng } from "../shared/lib/normalize";
-
-// Service imports — side-effecting operations
-import { saveMobileSlug, saveUserUploads, saveUploadCounter, loadUserUploads, loadUploadCounter } from "../services/storage/projectStore";
+import { PAGE_KEYS, makeEmptyPage, makeEmptyProject } from "../domain/project/defaults";
+import { pageDataToCardState, cardStateToPageData, maxCardCounter } from "../domain/editor/selectors";
 import { getOrCreateMobileSlug } from "../services/runtime/urlState";
-import { buildMobileDeployBundle } from "../services/deploy/buildPayload";
-import { uploadFile } from "../services/upload/api";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-const INSTRUCTIONS_IMAGE = MOBILE_INSTRUCTIONS_IMAGE;
-const DEFAULT_WALLPAPER = DEFAULT_MOBILE_WALLPAPER_URL;
-
-/** Mobile page titles (uppercase). Desktop uses PAGE_SHORT_TITLES from defaults. */
-const PAGE_TITLES: Record<PageKey, string> = {
-  p1: "GATEWAY",
-  p2: "MEMBERS",
-  p3: "ACCESS",
-  p4: "EXCLUSIVE",
-};
-
-const mediaTiles = [
-  { id: "media-video-1", type: "video" as const, placeholder: "https://...mp4", buttonLabel: "Video File" },
-  { id: "media-image-1", type: "image" as const, placeholder: "https://...",    buttonLabel: "Media File" },
-];
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function getMobDims() {
-  return {
-    width: window.innerWidth,
-    height: Math.max(window.innerHeight - MOB_NAV_H, 300),
-  };
-}
-
-let mobCardCounter = 0;
-
-function makeMobDefaultCard(dims: { width: number; height: number }): CardModel {
-  mobCardCounter += 1;
-  const w = Math.round(Math.min(dims.width * 0.86, 360));
-  const h = Math.round(Math.min(dims.height * 0.52, 260));
-  return {
-    id: `card-${mobCardCounter}`,
-    label: `Card ${mobCardCounter}`,
-    x: Math.round((dims.width - w) / 2),
-    y: Math.round((dims.height - h) / 2),
-    w,
-    h,
-    zIndex: 1,
-    lockSize: false,
-    lockPosition: false,
-    contentImage: INSTRUCTIONS_IMAGE,
-    contentCode: "c4444",
-    contentDisplay: "image",
-  };
-}
+// Mobile-extracted modules
+import { INSTRUCTIONS_IMAGE, DEFAULT_WALLPAPER, PAGE_TITLES, mediaTiles } from "./mobile/lib/mobileConstants";
+import { getMobDims, makeMobDefaultCard, getMobCardCounter, setMobCardCounter } from "./mobile/lib/mobileHelpers";
+import { getSelectedCard, getPageNavigation, isPageLocked, getAllPagesLocked } from "./mobile/lib/derivedState";
+import {
+  setSelectedCardLockSize, setSelectedCardLockPosition, togglePageLockState,
+  deleteSelectedCard as deleteSelectedCardReducer, addMobileCard as addMobileCardReducer,
+  applyCubeLayout as applyCubeLayoutReducer,
+  lockAllPagesProject, unlockAllPagesProject, resetAllPagesProject,
+  applyContentToSelectedCard, applySkinToSelectedCard, applyMediaToSelectedCard,
+  applyDropToCard, applySkinDropToCard,
+} from "./mobile/state/mobileReducers";
+import { useMobileDeployFlow } from "./mobile/hooks/useMobileDeployFlow";
+import { useMobileUploadFlow } from "./mobile/hooks/useMobileUploadFlow";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export function MobileApp() {
@@ -114,11 +67,6 @@ export function MobileApp() {
   const [contentPanel, setContentPanel] = useState<ContentPanelType>(null);
   const [contentPanelSide, setContentPanelSide] = useState<"left" | "right">("right");
 
-  // ── User uploads (x-designation) ──
-  const [userUploads, setUserUploads] = useState<ContentItem[]>(() => loadUserUploads<ContentItem>());
-  const [uploadCounter, setUploadCounter] = useState(loadUploadCounter);
-  const [uploading, setUploading] = useState(false);
-
   // ── Project ──
   // Normalize all page wallpapers to the mobile default when loading:
   // pages saved from the desktop editor (or brand-new empty pages) carry the
@@ -132,7 +80,7 @@ export function MobileApp() {
         key,
         {
           ...page,
-          wallpaper: mobileWallpaperUrls.has(page.wallpaper) ? page.wallpaper : DEFAULT_MOBILE_WALLPAPER_URL,
+          wallpaper: mobileWallpaperUrls.has(page.wallpaper) ? page.wallpaper : DEFAULT_WALLPAPER,
         },
       ])
     );
@@ -168,15 +116,13 @@ export function MobileApp() {
   } = useCardInteractions({ cardState, setCardState, layoutConfig: mobileLc });
 
   const selectedCard = useMemo(
-    () => cardState.cards.find((c) => c.id === cardState.selectedCardId) ?? cardState.cards[0] ?? null,
+    () => getSelectedCard(cardState),
     [cardState.cards, cardState.selectedCardId]
   );
   const selectedCardLockSize = selectedCard?.lockSize ?? false;
   const selectedCardLockPosition = selectedCard?.lockPosition ?? false;
 
-  const pageIndex = PAGE_KEYS.indexOf(page);
-  const canGoPrevPage = pageIndex > 0;
-  const canGoNextPage = pageIndex < PAGE_KEYS.length - 1;
+  const { pageIndex, canGoPrevPage, canGoNextPage } = getPageNavigation(page);
 
   // ── Auto-save page state on changes ──
   useEffect(() => {
@@ -216,7 +162,7 @@ export function MobileApp() {
         setWallpaper(target.wallpaper || DEFAULT_WALLPAPER);
         setCardState(pageDataToCardState(target));
         const maxId = maxCardCounter(target.cards);
-        if (maxId >= mobCardCounter) mobCardCounter = maxId;
+        if (maxId >= getMobCardCounter()) setMobCardCounter(maxId);
       }
 
       return updated;
@@ -225,199 +171,46 @@ export function MobileApp() {
     setPageRaw(nextPage);
   }
 
-  // ── Overlap check ──
-  // ── Save ──
-  function handleSave() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot save — overlapping tiles. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3500);
-      return;
-    }
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: { ...project.pages, [page]: cardStateToPageData(cardState, wallpaper) },
-    };
-    saveProject(full);
-    setProject(full);
-    setJustSaved(true);
-    setDeployStatus("Saved");
-    setTimeout(() => { setDeployStatus(null); setJustSaved(false); }, 2000);
-  }
+  // ── Deploy/save flow (extracted hook) ──
+  const { handleSave, handleDeploy } = useMobileDeployFlow({
+    slug, page, project, cardState, wallpaper, exclusiveTiles,
+    workspaceRef, wsDims,
+    setProject, setDeploying, setDeployStatus, setJustSaved, setDeployModal,
+  });
 
-  // ── Deploy ──
-  async function handleDeploy() {
-    if (hasAnyOverlap(cardState.cards)) {
-      setDeployStatus("⚠ Cannot deploy — overlapping tiles. Move tiles apart first.");
-      setTimeout(() => setDeployStatus(null), 3000);
-      return;
-    }
-    const full: ProjectData = {
-      ...project,
-      slug,
-      pages: { ...project.pages, [page]: cardStateToPageData(cardState, wallpaper) },
-    };
-    saveProject(full);
-    setProject(full);
+  // ── Upload flow (extracted hook) ──
+  const { userUploads, uploading, handleMobilePhotoUpload } = useMobileUploadFlow({
+    slug, selectedCard, lockPage: cardState.lockPage,
+    setCardState, setDeployStatus,
+  });
 
-    // Build deploy payloads via service
-    const actualWsW = workspaceRef.current?.offsetWidth ?? wsDims.width;
-    const actualWsH = wsDims.height;
-    const { main: mainPayload, holiday: holidayPayload } = buildMobileDeployBundle(
-      slug,
-      full.pages,
-      {
-        slug,
-        scaleParams: { actualWsW, actualWsH },
-        wallpaperCatalog,
-        mobileWallpaperCatalog,
-        exclusiveTiles,
-      },
-    );
-
-    setDeploying(true);
-    setDeployStatus("Deploying...");
-    const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
-    setDeploying(false);
-    setDeployStatus(null);
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${slug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${slug}/holiday`;
-    setDeployModal({ primaryUrl, holidayUrl, ok: result.ok, error: result.error });
-  }
-
-  // ── Card operations ──
+  // ── Card operations (via extracted reducers) ──
   function addMobileCard() {
-    if (cardState.lockPage) return;
-    mobCardCounter += 1;
-    const newId = `card-${mobCardCounter}`;
-    const maxZ = cardState.cards.reduce((max, c) => Math.max(max, c.zIndex ?? 1), 1);
-    const dims = getMobDims();
-    const cardW = Math.round(Math.min(dims.width * 0.76, 300));
-    const cardH = Math.round(Math.min(dims.height * 0.42, 220));
-    const offset = ((mobCardCounter - 1) % 5) * 18;
-    const newCard: CardModel = {
-      id: newId,
-      label: `Card ${mobCardCounter}`,
-      x: 16 + offset,
-      y: 16 + offset,
-      w: cardW,
-      h: cardH,
-      zIndex: maxZ + 1,
-      lockSize: false,
-      lockPosition: false,
-    };
-    setCardState((cur) => ({ ...cur, cards: [...cur.cards, newCard], selectedCardId: newId }));
+    setCardState((cur) => addMobileCardReducer(cur));
   }
 
   function deleteSelectedCard() {
     if (!selectedCard || cardState.lockPage) return;
-    setCardState((cur) => {
-      const remaining = cur.cards.filter((c) => c.id !== cur.selectedCardId);
-      return {
-        ...cur,
-        cards: remaining,
-        selectedCardId: remaining.length > 0 ? remaining[remaining.length - 1].id : "",
-      };
-    });
+    setCardState((cur) => deleteSelectedCardReducer(cur));
   }
 
   function applyCubeLayout(count: 1 | 2 | 3 | 4) {
-    if (cardState.lockPage) return;
-    const { width, height } = getMobDims();
-    const margin = 14;
-    const gap = 10;
-    const colW = Math.floor((width - margin * 2 - gap) / 2);
-    const rowH = Math.floor((height - margin * 2 - gap) / 2);
-
-    type Pos = { x: number; y: number; w: number; h: number };
-    let positions: Pos[];
-
-    if (count === 1) {
-      // Center of workspace
-      const w = Math.min(width - 28, 340);
-      const h = Math.min(height - 28, 280);
-      positions = [{ x: Math.round((width - w) / 2), y: Math.round((height - h) / 2), w, h }];
-    } else if (count === 2) {
-      // Top-left and top-right corners
-      positions = [
-        { x: margin, y: margin, w: colW, h: rowH },
-        { x: margin + colW + gap, y: margin, w: colW, h: rowH },
-      ];
-    } else if (count === 3) {
-      // TL, TR, BL
-      positions = [
-        { x: margin, y: margin, w: colW, h: rowH },
-        { x: margin + colW + gap, y: margin, w: colW, h: rowH },
-        { x: margin, y: margin + rowH + gap, w: colW, h: rowH },
-      ];
-    } else {
-      // All four corners (2×2 grid)
-      positions = [
-        { x: margin, y: margin, w: colW, h: rowH },
-        { x: margin + colW + gap, y: margin, w: colW, h: rowH },
-        { x: margin, y: margin + rowH + gap, w: colW, h: rowH },
-        { x: margin + colW + gap, y: margin + rowH + gap, w: colW, h: rowH },
-      ];
-    }
-
-    const cards: CardModel[] = positions.map((pos, idx) => {
-      mobCardCounter += 1;
-      return {
-        id: `card-${mobCardCounter}`,
-        label: `Card ${mobCardCounter}`,
-        x: Math.round(pos.x),
-        y: Math.round(pos.y),
-        w: Math.round(pos.w),
-        h: Math.round(pos.h),
-        zIndex: idx + 1,
-        lockSize: false,
-        lockPosition: false,
-      };
-    });
-
-    setCardState((cur) => ({
-      ...cur,
-      cards,
-      selectedCardId: cards[0]?.id ?? "",
-      lockSize: false,
-      lockPosition: false,
-    }));
+    setCardState((cur) => applyCubeLayoutReducer(cur, count));
   }
 
-  // ── Lock operations ──
+  // ── Lock operations (via extracted reducers) ──
   function setLockSize(next: boolean) {
     activeResizeCardIdRef.current = null;
-    setCardState((cur) => ({
-      ...cur,
-      lockSize: next,
-      cards: cur.cards.map((c) => (c.id === cur.selectedCardId ? { ...c, lockSize: next } : c)),
-    }));
+    setCardState((cur) => setSelectedCardLockSize(cur, next));
   }
 
   function setLockPosition(next: boolean) {
     activeDragCardIdRef.current = null;
-    setCardState((cur) => ({
-      ...cur,
-      lockPosition: next,
-      cards: cur.cards.map((c) => (c.id === cur.selectedCardId ? { ...c, lockPosition: next } : c)),
-    }));
+    setCardState((cur) => setSelectedCardLockPosition(cur, next));
   }
 
   function toggleLockPage() {
-    setCardState((cur) => {
-      const next = !cur.lockPage;
-      return {
-        ...cur,
-        lockPage: next,
-        lockSize: next ? true : cur.lockSize,
-        lockPosition: next ? true : cur.lockPosition,
-        cards: cur.cards.map((c) => ({
-          ...c,
-          lockSize: next ? true : c.lockSize,
-          lockPosition: next ? true : c.lockPosition,
-        })),
-      };
-    });
+    setCardState((cur) => togglePageLockState(cur));
     if (!cardState.lockPage) {
       activeResizeCardIdRef.current = null;
       activeDragCardIdRef.current = null;
@@ -429,117 +222,27 @@ export function MobileApp() {
     activeDragCardIdRef.current = null;
     const dims = getMobDims();
     const card = makeMobDefaultCard(dims);
-    // Reset all pages in project to empty
-    setProject((prev) => ({
-      ...prev,
-      pages: Object.fromEntries(PAGE_KEYS.map((k) => [k, makeEmptyPage()])),
-    }));
+    setProject((prev) => resetAllPagesProject(prev));
     setCardState({ cards: [card], selectedCardId: card.id, lockSize: false, lockPosition: false, lockPage: false });
   }
 
-  function isPageLocked(key: PageKey): boolean {
-    if (key === page) return cardState.lockPage;
-    return project.pages[key]?.lockPage ?? false;
-  }
-
-  const allPagesLocked = PAGE_KEYS.every((k) => isPageLocked(k));
+  const allPagesLocked = getAllPagesLocked(project, page, cardState);
 
   function lockAllPages() {
     setCardState((cur) => ({ ...cur, lockPage: true }));
-    setProject((prev) => ({
-      ...prev,
-      pages: Object.fromEntries(
-        PAGE_KEYS.map((k) => [k, { ...(prev.pages[k] ?? makeEmptyPage()), lockPage: true }])
-      ),
-    }));
+    setProject((prev) => lockAllPagesProject(prev));
   }
 
   function unlockAllPages() {
     setCardState((cur) => ({ ...cur, lockPage: false }));
-    setProject((prev) => ({
-      ...prev,
-      pages: Object.fromEntries(
-        PAGE_KEYS.map((k) => [k, { ...(prev.pages[k] ?? makeEmptyPage()), lockPage: false }])
-      ),
-    }));
+    setProject((prev) => unlockAllPagesProject(prev));
   }
 
-  // ── Persist user uploads ──
-  useEffect(() => { saveUserUploads(userUploads); }, [userUploads]);
-  useEffect(() => { saveUploadCounter(uploadCounter); }, [uploadCounter]);
-
-  // ── Mobile photo upload → PNG → R2 with x-designation ──
-  async function handleMobilePhotoUpload(file: File) {
-    if (!file) return;
-    if (uploading) { setDeployStatus("Upload already in progress..."); return; }
-    setUploading(true);
-    setDeployStatus("Converting image...");
-    try {
-      const pngBlob = await convertToPng(file);
-      const nextNum = uploadCounter + 1;
-      const xCode = `x${String(nextNum).padStart(3, "0")}`;
-      const filename = `${xCode}.png`;
-
-      // Create a local blob URL so the image is visible immediately
-      const localUrl = URL.createObjectURL(pngBlob);
-      const item: ContentItem = { code: xCode, url: localUrl };
-      setUserUploads((prev) => [...prev, item]);
-      setUploadCounter(nextNum);
-
-      // Auto-apply to selected card immediately
-      if (selectedCard && !cardState.lockPage) {
-        setCardState((cur) => ({
-          ...cur,
-          cards: cur.cards.map((c) =>
-            c.id === selectedCard.id
-              ? { ...c, contentImage: localUrl, contentUrl: localUrl, contentDisplay: "image" as const, contentType: "image" as const, contentCode: xCode }
-              : c
-          ),
-        }));
-      }
-
-      // Upload to R2 — update URL if successful
-      const sizeKB = (pngBlob.size / 1024).toFixed(0);
-      setDeployStatus(`Uploading ${xCode} (${sizeKB} KB)...`);
-      const uploadResult = await uploadFile(pngBlob, filename, slug);
-      if (uploadResult.ok && uploadResult.remoteUrl) {
-        const remoteUrl = uploadResult.remoteUrl;
-        setUserUploads((prev) => prev.map((u) => u.code === xCode ? { ...u, url: remoteUrl } : u));
-        setCardState((cur) => ({
-          ...cur,
-          cards: cur.cards.map((c) =>
-            c.contentCode === xCode
-              ? { ...c, contentImage: remoteUrl, contentUrl: remoteUrl }
-              : c
-          ),
-        }));
-        setDeployStatus(`${xCode} uploaded`);
-        setTimeout(() => setDeployStatus(null), 2000);
-      } else {
-        setDeployStatus(`Upload failed: ${uploadResult.error ?? "unknown"}`);
-        setTimeout(() => setDeployStatus(null), 4000);
-      }
-    } catch (err) {
-      setDeployStatus(`Convert error: ${(err as Error).message}`);
-      setTimeout(() => setDeployStatus(null), 5000);
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  // ── Apply content / skin / media to selected card ──
+  // ── Apply content / skin / media to selected card (via extracted reducers) ──
   const applyContentToCard = useCallback(
     (contentUrl: string, contentCode?: string) => {
       if (!selectedCard || cardState.lockPage) return;
-      setCardState((cur: typeof cardState) => ({
-        ...cur,
-        cards: cur.cards.map((c) =>
-          c.id === selectedCard.id
-            ? { ...c, contentImage: contentUrl, contentUrl, contentDisplay: "image", contentType: "image", contentCode: contentCode ?? c.contentCode }
-            : c
-        ),
-      }));
-      // Content panel stays open after selecting content
+      setCardState((cur) => applyContentToSelectedCard(cur, selectedCard.id, contentUrl, contentCode));
     },
     [selectedCard, cardState.lockPage]
   );
@@ -547,11 +250,7 @@ export function MobileApp() {
   const applySkinToCard = useCallback(
     (skinId: string) => {
       if (!selectedCard) return;
-      setCardState((cur) => ({
-        ...cur,
-        cards: cur.cards.map((c) => (c.id === selectedCard.id ? { ...c, skinId } : c)),
-      }));
-      // Content panel stays open after selecting skin
+      setCardState((cur) => applySkinToSelectedCard(cur, selectedCard.id, skinId));
     },
     [selectedCard]
   );
@@ -559,21 +258,7 @@ export function MobileApp() {
   const applyMediaToCard = useCallback(
     (mediaUrl: string, mediaType: "image" | "video") => {
       if (!selectedCard || !mediaUrl || cardState.lockPage) return;
-      const contentDisplay = mediaType === "video" ? "video" : "image";
-      setCardState((cur) => ({
-        ...cur,
-        cards: cur.cards.map((c) =>
-          c.id === selectedCard.id
-            ? {
-                ...c,
-                contentImage: contentDisplay === "image" ? mediaUrl : undefined,
-                contentUrl: mediaUrl,
-                contentDisplay,
-                contentType: mediaType,
-              }
-            : c
-        ),
-      }));
+      setCardState((cur) => applyMediaToSelectedCard(cur, selectedCard.id, mediaUrl, mediaType));
     },
     [selectedCard, cardState.lockPage]
   );
@@ -601,23 +286,13 @@ export function MobileApp() {
     if (dragSource === "skin") {
       const skinId = e.dataTransfer.getData("application/x-skin-id");
       if (!skinId) return;
-      setCardState((cur) => ({
-        ...cur,
-        cards: cur.cards.map((c) => (c.id === cardId ? { ...c, skinId } : c)),
-      }));
+      setCardState((cur) => applySkinDropToCard(cur, cardId, skinId));
       return;
     }
     const contentUrl = e.dataTransfer.getData("text/plain");
     if (!contentUrl) return;
     const contentCode = e.dataTransfer.getData("application/x-content-code") || undefined;
-    setCardState((cur) => ({
-      ...cur,
-      cards: cur.cards.map((c) =>
-        c.id === cardId
-          ? { ...c, contentImage: contentUrl, contentUrl, contentDisplay: "image", contentType: "image", contentCode }
-          : c
-      ),
-    }));
+    setCardState((cur) => applyDropToCard(cur, cardId, contentUrl, contentCode));
   }, [cardState.lockPage]);
 
   // ── Page nav ──
@@ -924,7 +599,7 @@ export function MobileApp() {
                   {PAGE_KEYS.map((k, idx) => (
                     <button
                       key={k}
-                      className={`mobPageCube ${page === k ? "isActivePage" : ""} ${isPageLocked(k) ? "isLockedPage" : ""}`}
+                      className={`mobPageCube ${page === k ? "isActivePage" : ""} ${isPageLocked(project, page, cardState, k) ? "isLockedPage" : ""}`}
                       onClick={() => { switchPage(k); }}
                     >
                       P{idx + 1}
@@ -980,8 +655,6 @@ export function MobileApp() {
           const file = e.target.files?.[0];
           e.target.value = "";
           if (!file) return;
-          // Reset uploading guard in case previous upload errored
-          setUploading(false);
           handleMobilePhotoUpload(file);
         }}
       />
