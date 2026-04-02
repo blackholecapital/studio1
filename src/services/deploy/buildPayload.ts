@@ -62,7 +62,7 @@ export function scaleMobile(
 function serializeExclusiveTiles(tiles: ExclusiveTile[]) {
   return tiles
     .map((tile, i) => {
-      if (!tile.url && !tile.price && !tile.locked) return null;
+      if (!tile.url && !tile.contentCode && !tile.price && !tile.locked) return null;
       const out: Record<string, unknown> = {
         tileNumber: i + 1,
         contentCode: tile.contentCode || `EC-${String(i + 1).padStart(3, "0")}`,
