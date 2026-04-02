@@ -1,50 +1,55 @@
-const json = (obj, status = 200) =>
-  new Response(JSON.stringify(obj, null, 2), {
-    status,
-    headers: { "content-type": "application/json" }
-  });
+import { json, Errors } from "./_shared/json.js";
+import { sanitizeSlug, sanitizeFilename, MAX_UPLOAD_FILE_SIZE, ALLOWED_UPLOAD_TYPES } from "./_shared/validate.js";
+import { corsWriteHeaders, handlePreflight } from "./_shared/cors.js";
 
-const bad = (msg, status = 400) => json({ ok: false, error: msg }, status);
-
-const sanitizeFilename = (name) =>
-  String(name || "upload.bin")
-    .replace(/[^a-zA-Z0-9._-]/g, "_")
-    .slice(0, 128);
-
-const sanitizeSlug = (s) =>
-  String(s || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+function withCors(response, request, env) {
+  const cors = corsWriteHeaders(request, env);
+  for (const [k, v] of Object.entries(cors)) response.headers.set(k, v);
+  return response;
+}
 
 async function handleUpload({ request, env }) {
-  if (!env?.DEMO_BUCKET) return bad("Missing DEMO_BUCKET binding", 500);
+  if (!env?.DEMO_BUCKET) return Errors.MISSING_BINDING("DEMO_BUCKET");
 
   let formData;
   try {
     formData = await request.formData();
   } catch {
-    return bad("Invalid form data");
+    return Errors.BAD_REQUEST("Invalid form data");
   }
 
   const file = formData.get("file");
   const slug = sanitizeSlug(formData.get("slug") ?? "");
 
-  if (!file || typeof file === "string") return bad("Missing file");
-  if (!slug) return bad("Missing slug");
-  if (file.size > 5 * 1024 * 1024) return bad("File must be 5MB or less", 413);
+  if (!file || typeof file === "string") return Errors.BAD_REQUEST("Missing file");
+  if (!slug) return Errors.BAD_REQUEST("Missing or invalid slug");
+  if (file.size > MAX_UPLOAD_FILE_SIZE) {
+    return Errors.PAYLOAD_TOO_LARGE(`File must be ${MAX_UPLOAD_FILE_SIZE / (1024 * 1024)}MB or less`);
+  }
+
+  // Validate MIME type
+  const mimeType = (file.type || "").toLowerCase();
+  if (mimeType && !ALLOWED_UPLOAD_TYPES.has(mimeType)) {
+    return Errors.BAD_REQUEST(`File type "${mimeType}" is not allowed. Accepted: ${[...ALLOWED_UPLOAD_TYPES].join(", ")}`);
+  }
 
   const filename = sanitizeFilename(file.name);
-  // Store in tenant-content (correctly spelled) under the demo bucket
   const key = `tenant-content/${slug}/${filename}`;
 
   await env.DEMO_BUCKET.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type || "application/octet-stream" }
+    httpMetadata: { contentType: mimeType || "application/octet-stream" },
   });
 
-  return json({ ok: true, key });
+  const remoteUrl = `https://demo-content.xyz-labs.xyz/${key}`;
+
+  return json({ ok: true, key, remoteUrl });
 }
 
-export const onRequestPost = handleUpload;
+export async function onRequestPost(ctx) {
+  const res = await handleUpload(ctx);
+  return withCors(res, ctx.request, ctx.env);
+}
+
+export function onRequestOptions(ctx) {
+  return handlePreflight(ctx.request, ctx.env);
+}

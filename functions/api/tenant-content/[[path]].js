@@ -1,16 +1,6 @@
-function guessContentType(path) {
-  const ext = path.split(".").pop()?.toLowerCase() ?? "";
-  const types = {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-    gif: "image/gif",
-    mp4: "video/mp4",
-    webm: "video/webm",
-  };
-  return types[ext] ?? "application/octet-stream";
-}
+import { sanitizePathSegments } from "../_shared/validate.js";
+import { guessContentType } from "../_shared/storage.js";
+import { corsReadHeaders } from "../_shared/cors.js";
 
 export async function onRequestGet({ params, env }) {
   if (!env?.DEMO_BUCKET) {
@@ -18,10 +8,10 @@ export async function onRequestGet({ params, env }) {
   }
 
   const segments = Array.isArray(params.path) ? params.path : [params.path ?? ""];
-  const key = `tenant-content/${segments.join("/")}`;
+  const subPath = sanitizePathSegments(segments);
+  if (!subPath) return new Response("Not found", { status: 404 });
 
-  if (!key || key === "tenant-content/") return new Response("Not found", { status: 404 });
-
+  const key = `tenant-content/${subPath}`;
   const object = await env.DEMO_BUCKET.get(key);
   if (!object) return new Response("Not found", { status: 404 });
 
@@ -31,7 +21,7 @@ export async function onRequestGet({ params, env }) {
     headers: {
       "Content-Type": contentType,
       "Cache-Control": "public, max-age=86400",
-      "Access-Control-Allow-Origin": "*",
+      ...corsReadHeaders(),
     },
   });
 }
