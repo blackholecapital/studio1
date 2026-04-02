@@ -60,24 +60,22 @@ export function scaleMobile(
 // ── Shared exclusive-tile serializer ─────────────────────────────────────────
 
 function serializeExclusiveTiles(tiles: ExclusiveTile[]) {
-  return tiles
-    .map((tile, i) => {
-      if (!tile.url && !tile.contentCode && !tile.price && !tile.locked) return null;
-      const out: Record<string, unknown> = {
-        tileNumber: i + 1,
-        contentCode: tile.contentCode || `EC-${String(i + 1).padStart(3, "0")}`,
-        tileName: `Exclusive Content-${i + 1}`,
-        lockStatus: tile.locked ? "locked" : "unlocked",
-        purchasePrice: tile.price || null,
-      };
-      // Only include contentUrl for non-catalog items (user uploads, external URLs).
-      // Catalog items (c2, c4444, etc.) are resolved by contentCode on the gateway side.
-      if (!tile.contentCode && tile.url) {
-        out.contentUrl = tile.url;
-      }
-      return out;
-    })
-    .filter(Boolean);
+  return tiles.map((tile, i) => {
+    const isEmpty = !tile.url && !tile.contentCode && !tile.price && !tile.locked;
+    const out: Record<string, unknown> = {
+      tileNumber: i + 1,
+      contentCode: isEmpty ? null : (tile.contentCode || `EC-${String(i + 1).padStart(3, "0")}`),
+      tileName: `Exclusive Content-${i + 1}`,
+      lockStatus: tile.locked ? "locked" : "unlocked",
+      purchasePrice: tile.price || null,
+    };
+    // Only include contentUrl for non-catalog items (user uploads, external URLs).
+    // Catalog items (c2, c4444, etc.) are resolved by contentCode on the gateway side.
+    if (!tile.contentCode && tile.url) {
+      out.contentUrl = tile.url;
+    }
+    return out;
+  });
 }
 
 // ── Desktop payload builder ──────────────────────────────────────────────────

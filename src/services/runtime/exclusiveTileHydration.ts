@@ -31,7 +31,7 @@ export const EXCLUSIVE_TILE_COUNT = 6;
 /** Shape of a single exclusive tile in the deployed JSON payload. */
 export type DeployedExclusiveTile = {
   tileNumber: number;
-  contentCode: string;
+  contentCode: string | null;
   tileName: string;
   lockStatus: "locked" | "unlocked";
   purchasePrice: string | null;
@@ -41,7 +41,7 @@ export type DeployedExclusiveTile = {
 /** Runtime-ready tile with a resolved image URL. */
 export type HydratedExclusiveTile = {
   tileNumber: number;
-  contentCode: string;
+  contentCode: string | null;
   tileName: string;
   locked: boolean;
   purchasePrice: string | null;
@@ -67,12 +67,11 @@ function normalizeOneTile(raw: unknown): DeployedExclusiveTile | null {
     return null;
   }
 
-  // contentCode: required string (e.g. "c3", "EC-001")
+  // contentCode: string or null (null = empty placeholder slot)
   const contentCode =
     typeof r.contentCode === "string" && r.contentCode
       ? r.contentCode
       : null;
-  if (!contentCode) return null;
 
   // tileName: string, with fallback
   const tileName =
@@ -148,11 +147,14 @@ export function normalizeDeployedExclusiveTiles(
  *   4. Fallback → empty string (caller should show placeholder)
  */
 function resolveExclusiveTileImage(
-  contentCode: string,
+  contentCode: string | null,
   contentUrl?: string,
 ): string {
   // Explicit URL takes priority (user uploads, external media)
   if (contentUrl) return contentUrl;
+
+  // Null/empty contentCode = empty placeholder slot
+  if (!contentCode) return "";
 
   // Standard catalog content codes
   const resolved = resolveContentCode(contentCode);
@@ -170,7 +172,7 @@ function resolveExclusiveTileImage(
 function makeDefaultTile(slot: number): HydratedExclusiveTile {
   return {
     tileNumber: slot,
-    contentCode: "",
+    contentCode: null,
     tileName: `Exclusive Content-${slot}`,
     locked: false,
     purchasePrice: null,
