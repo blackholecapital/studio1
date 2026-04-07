@@ -837,12 +837,6 @@ export function App() {
           deleteSelectedCard={deleteSelectedCard}
           isPageLocked={cardState.lockPage}
           hasSelectedCard={!!selectedCard}
-          slug={slug}
-          onSlugChange={handleSlugChange}
-          isSaved={isSaved}
-          onSave={handleSave}
-          tooltipOpen={tooltipOpen}
-          setTooltipOpen={setTooltipOpen}
           onDeploy={handleDeployGateway}
           deploying={deploying}
         />
@@ -870,6 +864,8 @@ export function App() {
           lockAllPages={lockAllPages}
           unlockAllPages={unlockAllPages}
           resetWorkspace={resetWorkspace}
+          isSaved={isSaved}
+          onSave={handleSave}
         />
       )}
       workspace={(

@@ -12,12 +12,6 @@ export function DesktopTopBar(props: {
   deleteSelectedCard: () => void;
   isPageLocked: boolean;
   hasSelectedCard: boolean;
-  slug: string;
-  onSlugChange: (value: string) => void;
-  isSaved: boolean;
-  onSave: () => void;
-  tooltipOpen: string | null;
-  setTooltipOpen: (value: string | null) => void;
   onDeploy: () => void;
   deploying: boolean;
 }) {
@@ -44,12 +38,6 @@ export function DesktopTopBar(props: {
         hasSelectedCard={props.hasSelectedCard}
       />
       <DesktopDeployControls
-        slug={props.slug}
-        onSlugChange={props.onSlugChange}
-        isSaved={props.isSaved}
-        onSave={props.onSave}
-        tooltipOpen={props.tooltipOpen}
-        setTooltipOpen={props.setTooltipOpen}
         onDeploy={props.onDeploy}
         deploying={props.deploying}
       />

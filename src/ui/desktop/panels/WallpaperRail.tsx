@@ -27,6 +27,8 @@ export function WallpaperRail(props: {
   lockAllPages: () => void;
   unlockAllPages: () => void;
   resetWorkspace: () => void;
+  isSaved: boolean;
+  onSave: () => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
   return (
@@ -77,13 +79,16 @@ export function WallpaperRail(props: {
                 <div key={item.key} className="leftRailPageRow">
                   <button className={`leftRailTabBtn leftRailTabBtnFlex ${isCurrentPage ? "isActive" : ""} ${isLocked ? "isPageLocked" : ""}`} onClick={() => props.switchPage(item.key)}>{item.label}</button>
                   <button className={`cardLockBtn ${isLocked ? "isLocked" : "isUnlocked"}`} onClick={(e) => { e.stopPropagation(); props.togglePageLock(item.key); }} title={isLocked ? "Unlock page" : "Lock page"}>
-                    {isLocked ? <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg> : <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg>}
+                    {isLocked ? <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg> : <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                   </button>
                 </div>
               );
             })}
-            <button className={`leftRailTabBtn ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock All Pages" : "Lock All Pages"}</button>
+            <button className={`leftRailTabBtn ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
+            <button className={`leftRailTabBtn ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             <button className="leftRailTabBtn" onClick={props.resetWorkspace}>Reset</button>
+            <button className="leftRailTabBtn">Login</button>
+            <button className="leftRailTabBtn leftRailHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }}>?</button>
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">

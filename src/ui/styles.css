@@ -428,6 +428,16 @@ button {
   color: rgba(120, 255, 180, 0.95);
 }
 
+.leftRailTabBtn.isSavedState {
+  color: rgba(80, 255, 150, 0.95);
+}
+
+.leftRailHelpBtn {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
 .gatewayPagePanel {
   display: flex;
   flex-direction: column;
