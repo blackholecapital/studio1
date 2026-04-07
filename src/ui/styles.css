@@ -149,7 +149,7 @@ button {
   color: rgba(80, 255, 150, 0.95);
 }
 
-/* Help ? button in top strip (left of Deploy Gateway) */
+/* Help ? button in top strip (left of Publish Pages) */
 .topStripHelpWrap {
   position: relative;
   display: flex;
@@ -176,6 +176,31 @@ button {
 
 .topStripHelpBtn:hover {
   color: rgba(255, 255, 255, 0.95);
+}
+
+/* Publish Pages button — plain text, consistent with SAVE */
+.topStripPublishBtn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(210, 235, 255, 0.75);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.topStripPublishBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.topStripPublishBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Deploy help tooltip — fixed position to escape stacking context */

@@ -17,21 +17,21 @@ export function DesktopDeployControls(props: {
       <div className="topStripHelpWrap">
         <button
           className="topStripHelpBtn"
-          onClick={(e) => { e.stopPropagation(); setTooltipOpen(tooltipOpen === "deploy-help" ? null : "deploy-help"); }}
+          onClick={(e) => { e.stopPropagation(); setTooltipOpen(tooltipOpen === "all" ? null : "all"); }}
           title="Help"
         >?</button>
-        {tooltipOpen === "deploy-help" && (
+        {tooltipOpen === "all" && (
           <div className="tooltipCard tooltipCardDeploy">
             <div className="tooltipLine">Position your tiles</div>
             <div className="tooltipLine">Add your content</div>
             <div className="tooltipLine">Save</div>
-            <div className="tooltipLine">Deploy Gateway</div>
+            <div className="tooltipLine">Publish Pages</div>
             <div className="tooltipLine">Links pop up for your live 24-hour demo</div>
           </div>
         )}
       </div>
-      <button className={`pillButton walletButton isPrimary ${isSaved ? "isReadyToDeploy" : ""}`} onClick={onDeploy} disabled={deploying}>
-        {deploying ? "Deploying..." : "Deploy Gateway"}
+      <button className="topStripPublishBtn" onClick={onDeploy} disabled={deploying}>
+        {deploying ? "Publishing..." : "Publish Pages"}
       </button>
     </div>
   );

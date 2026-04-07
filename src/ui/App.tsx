@@ -931,7 +931,7 @@ export function App() {
           <div className="deployModalOverlay" onClick={() => setDeployModal(null)}>
             <div className="deployModalCard" onClick={(e) => e.stopPropagation()}>
               <button className="deployModalClose" onClick={() => setDeployModal(null)}>×</button>
-              <div className="deployModalTitle">Welcome to Gateway</div>
+              <div className="deployModalTitle">Welcome to BIZ PAGES</div>
               {deployModal.ok ? (
                 <div className="deployModalSubtitle">Your page has been deployed. Share these links:</div>
               ) : (
@@ -1034,12 +1034,12 @@ export function App() {
             </>
           )}
 
-          {/* Step 5: Save + Deploy — finger points at SAVE then slides to Deploy Gateway */}
+          {/* Step 5: Save + Publish — finger points at SAVE then slides to Publish Pages */}
           {ghostStep === 5 && (
             <>
               <div className="ghostLabel ghostLabelDeploy">
                 <div>SAVE</div>
-                <div>Deploy Gateway</div>
+                <div>Publish Pages</div>
               </div>
               <div className="ghostFingerAbs ghostFingerSave">
                 <svg className="ghostFingerSvg" viewBox="0 0 24 24" width="32" height="32" fill="none"><path d="M12 1a3 3 0 0 0-3 3v7.27l-1.54-1.55a2.1 2.1 0 0 0-2.97 2.97l5.22 5.22A5 5 0 0 0 13.24 20H16a5 5 0 0 0 5-5v-4a3 3 0 0 0-3-3h-.5a2.5 2.5 0 0 0-2.5 2v-.5A2.5 2.5 0 0 0 12.5 7H12V4a3 3 0 0 0-3-3h3z" fill="rgba(255,255,255,0.92)" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5"/></svg>

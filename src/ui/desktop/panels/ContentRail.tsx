@@ -41,8 +41,7 @@ export function ContentRail(props: {
         >
           {props.activeTab === "content" ? "Content" : props.activeTab === "exclusive" ? "Exclusive" : props.activeTab === "media" ? "Media" : "Skins"}
         </button>
-        <button className="railHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === `right-${props.activeTab}` ? null : `right-${props.activeTab}`); }} title="Help">?</button>
-        {props.tooltipOpen === `right-${props.activeTab}` && (
+        {props.tooltipOpen === "all" && (
           <div className="tooltipCard">
             {(props.tooltipHelp[props.activeTab] ?? []).map((line, i) => <div key={i} className="tooltipLine">{line}</div>)}
           </div>

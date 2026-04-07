@@ -42,8 +42,7 @@ export function WallpaperRail(props: {
         >
           {props.leftRailTab === "wallpaper" ? "Wallpaper" : "Pages"}
         </button>
-        <button className="railHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === props.leftRailTab ? null : props.leftRailTab); }} title="Help">?</button>
-        {props.tooltipOpen === props.leftRailTab && (
+        {props.tooltipOpen === "all" && (
           <div className="tooltipCard">
             {(props.tooltipHelp[props.leftRailTab] ?? []).map((line, i) => <div key={i} className="tooltipLine">{line}</div>)}
           </div>

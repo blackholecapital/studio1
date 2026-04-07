@@ -17,7 +17,7 @@ export const DEFAULT_WALLPAPER = DEFAULT_MOBILE_WALLPAPER_URL;
 
 /** Mobile page titles (uppercase). Desktop uses PAGE_SHORT_TITLES from defaults. */
 export const PAGE_TITLES: Record<PageKey, string> = {
-  p1: "GATEWAY",
+  p1: "HOME",
   p2: "MEMBERS",
   p3: "ACCESS",
   p4: "EXCLUSIVE",

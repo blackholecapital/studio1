@@ -10,7 +10,7 @@ export function MobileDeployControls(props: {
         Save
       </button>
       <button className="mobFloatBtn mobFloatDeploy deployGlow" onClick={props.onDeploy} disabled={props.deploying}>
-        {props.deploying ? "..." : "Deploy Gateway"}
+        {props.deploying ? "..." : "Publish Pages"}
       </button>
     </div>
   );
