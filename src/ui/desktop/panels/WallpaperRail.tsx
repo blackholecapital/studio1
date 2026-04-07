@@ -42,7 +42,7 @@ export function WallpaperRail(props: {
             props.setLeftMode(next === "wallpaper" ? "create" : "gateway");
           }}
         >
-          {props.leftRailTab === "wallpaper" ? "Wallpaper" : "Pages"}
+          {props.leftRailTab === "wallpaper" ? "WALLPAPER" : "PAGES"}
         </button>
         {props.tooltipOpen === "all" && (
           <div className="tooltipCard">
@@ -84,11 +84,13 @@ export function WallpaperRail(props: {
                 </div>
               );
             })}
-            <button className={`leftRailTabBtn ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
+            <div className="leftRailPageRow">
+              <button className={`leftRailTabBtn leftRailTabBtnFlex ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
+              <button className="leftRailHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+            </div>
             <button className={`leftRailTabBtn ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             <button className="leftRailTabBtn" onClick={props.resetWorkspace}>Reset</button>
             <button className="leftRailTabBtn">Login</button>
-            <button className="leftRailTabBtn leftRailHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }}>?</button>
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">

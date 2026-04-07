@@ -105,8 +105,9 @@ button {
 .brandMark {
   font-weight: 800;
   letter-spacing: 0.06em;
-  font-size: 1.0rem;
+  font-size: 0.8rem;
   white-space: nowrap;
+  color: rgba(210, 235, 255, 0.75);
 }
 
 /* ID label + input + Save — floating text style, no pill */
@@ -178,7 +179,7 @@ button {
   color: rgba(255, 255, 255, 0.95);
 }
 
-/* Publish Pages button — plain text, consistent with SAVE */
+/* Publish Pages button — matches title sizing and blue-gray tint */
 .topStripPublishBtn {
   background: transparent;
   border: none;
@@ -186,7 +187,8 @@ button {
   color: rgba(210, 235, 255, 0.75);
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
@@ -221,11 +223,11 @@ button {
 }
 
 .topStripTitle {
-  font-size: 1.0rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.88;
+  color: rgba(210, 235, 255, 0.75);
   padding: 0 8px;
   /* Fixed width so arrows/buttons don't shift when cycling between short/long page names */
   display: inline-block;
@@ -433,9 +435,25 @@ button {
 }
 
 .leftRailHelpBtn {
-  text-align: center;
-  font-size: 1.05rem;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(210, 235, 255, 0.65);
+  font-size: 1.0rem;
   font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0;
+}
+
+.leftRailHelpBtn:hover {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .gatewayPagePanel {
@@ -1009,8 +1027,8 @@ button {
   width: 10px;
   height: 10px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(210, 235, 255, 0.55);
+  border-color: rgba(210, 235, 255, 0.3);
 }
 
 .cardTabsPanel {
@@ -2428,13 +2446,13 @@ button {
   font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(210, 235, 255, 0.78);
-  letter-spacing: 0.06em;
+  color: rgba(210, 235, 255, 0.75);
+  letter-spacing: 0.12em;
   cursor: pointer;
   text-align: center;
   transition: color 0.15s;
-  /* Fixed width so ? doesn't shift when label changes (Exclusive is widest) */
-  width: 110px;
+  /* Fixed width so layout doesn't shift when label changes (EXCLUSIVE is widest) */
+  width: 120px;
   flex-shrink: 0;
 }
 
@@ -2555,7 +2573,7 @@ button {
   background: none;
   border: none;
   padding: 4px 6px;
-  color: rgba(210, 235, 255, 0.85);
+  color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2578,7 +2596,7 @@ button {
   background: none;
   border: none;
   padding: 4px 6px;
-  color: rgba(210, 235, 255, 0.85);
+  color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
   display: flex;
   align-items: center;

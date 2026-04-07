@@ -18,7 +18,7 @@ export function DesktopTopBar(props: {
   return (
     <header className="topStrip glassPanel">
       <div className="topStripLeft">
-        <span className="brandMark">BIZ PAGES</span>
+        <span className="brandMark">PAGE STUDIO</span>
         <div className="cubeButtonsHeader">
           <button className="cubeButton cubeButtonHeader cubeButtonOne" onClick={() => props.applyCubeLayout(1)} aria-label="Add 1 cube"><span className="cubeDot" /></button>
           <button className="cubeButton cubeButtonHeader cubeButtonTwo" onClick={() => props.applyCubeLayout(2)} aria-label="Add 2 cubes"><span className="cubeDot" /><span className="cubeDot" /></button>

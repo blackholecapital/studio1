@@ -6,7 +6,7 @@ export function DesktopDeployControls(props: {
   return (
     <div className="topStripRight">
       <button className="topStripPublishBtn" onClick={onDeploy} disabled={deploying}>
-        {deploying ? "Publishing..." : "Publish Pages"}
+        {deploying ? "PUBLISHING..." : "PUBLISH PAGES"}
       </button>
     </div>
   );
