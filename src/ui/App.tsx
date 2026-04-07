@@ -127,7 +127,7 @@ export function App() {
   const [visibleMediaCount, setVisibleMediaCount] = useState(CATALOG_PAGE_SIZE);
   const railScrollRef = useRef<HTMLDivElement | null>(null);
   // Tracks arrangement cycle index for each cube-button count (wraps every 5)
-  const [cubeLayoutCycle, setCubeLayoutCycle] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0 });
+  const [cubeLayoutCycle, setCubeLayoutCycle] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 });
 
   // ── Ghost Flow (first-time user onboarding — runs on every page load) ──
   const [ghostStep, setGhostStep] = useState<number | null>(0);
@@ -136,9 +136,9 @@ export function App() {
   const endGhostFlow = useCallback(() => {
     setGhostStep(null);
     if (ghostTimerRef.current) { clearTimeout(ghostTimerRef.current); ghostTimerRef.current = null; }
-    // Restore rails to default state in case ghost flow interrupted mid-cycle
-    setLeftRailTab("wallpaper");
-    setLeftMode("create");
+    // Leave pages tile open at end of preview
+    setLeftRailTab("pages");
+    setLeftMode("gateway");
     setActiveTab("content");
     markGhostFlowSeen();
   }, []);
@@ -163,18 +163,14 @@ export function App() {
       return () => { clearTimeout(wallpaperTimer); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
-    // Step 2 (3s): cycle left rail button — Wallpaper → Pages → Wallpaper
+    // Step 2 (2.5s): cycle left rail button — Wallpaper → Pages (stays on pages)
     if (ghostStep === 2) {
       const toPages = setTimeout(() => {
         setLeftRailTab("pages");
         setLeftMode("gateway");
       }, 1000);
-      const backToWallpaper = setTimeout(() => {
-        setLeftRailTab("wallpaper");
-        setLeftMode("create");
-      }, 1800);
-      ghostTimerRef.current = setTimeout(() => setGhostStep(3), 3000);
-      return () => { clearTimeout(toPages); clearTimeout(backToWallpaper); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
+      ghostTimerRef.current = setTimeout(() => setGhostStep(3), 2500);
+      return () => { clearTimeout(toPages); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
     // Step 3 (3s): drag content — apply c4444 to center tile on completion
@@ -595,7 +591,7 @@ export function App() {
     }));
   }
 
-  function applyCubeLayout(count: 1 | 2 | 3 | 4) {
+  function applyCubeLayout(count: 1 | 2 | 3 | 4 | 5 | 6) {
     if (cardState.lockPage) return;
     const baseW = 260;
     const baseH = 180;
@@ -608,37 +604,54 @@ export function App() {
     const topY    = margin;
     const bottomY = Math.round(wsH - baseH - margin);
     const centerY = Math.round((wsH - baseH) / 2);
+    const midLeftX  = Math.round(wsW * 0.32 - baseW / 2);
+    const midRightX = Math.round(wsW * 0.68 - baseW / 2);
+    const thirdY    = Math.round(wsH * 0.33 - baseH / 2);
+    const twoThirdY = Math.round(wsH * 0.67 - baseH / 2);
 
-    // Each button cycles through 5 arrangement presets (wraps back on 6th click).
-    // Default (0) for each count is corner-based.
-    const ARRANGEMENTS: Record<1|2|3|4, Array<Array<{x:number;y:number}>>> = {
+    // Each button cycles through arrangement presets with randomized sizing.
+    const ARRANGEMENTS: Record<1|2|3|4|5|6, Array<Array<{x:number;y:number}>>> = {
       1: [
-        [{ x: centerX, y: centerY }],                             // 0 center
-        [{ x: leftX,   y: topY }],                               // 1 top-left
-        [{ x: rightX,  y: topY }],                               // 2 top-right
-        [{ x: rightX,  y: bottomY }],                            // 3 bottom-right
-        [{ x: leftX,   y: bottomY }],                            // 4 bottom-left
+        [{ x: centerX, y: centerY }],
+        [{ x: leftX,   y: topY }],
+        [{ x: rightX,  y: topY }],
+        [{ x: rightX,  y: bottomY }],
+        [{ x: leftX,   y: bottomY }],
       ],
       2: [
-        [{ x: leftX, y: topY },    { x: rightX, y: topY }],     // 0 TL TR (top corners)
-        [{ x: leftX, y: centerY }, { x: rightX, y: centerY }],  // 1 H-center
-        [{ x: leftX, y: bottomY }, { x: rightX, y: bottomY }],  // 2 H-bottom
-        [{ x: leftX, y: topY },    { x: leftX,  y: bottomY }],  // 3 V-left
-        [{ x: rightX, y: topY },   { x: rightX, y: bottomY }],  // 4 V-right
+        [{ x: leftX, y: topY },    { x: rightX, y: topY }],
+        [{ x: leftX, y: centerY }, { x: rightX, y: centerY }],
+        [{ x: leftX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: leftX, y: topY },    { x: leftX,  y: bottomY }],
+        [{ x: rightX, y: topY },   { x: rightX, y: bottomY }],
       ],
       3: [
-        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: leftX,   y: bottomY }],  // 0 TL TR BL
-        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: rightX,  y: bottomY }],  // 1 TL TR BR
-        [{ x: leftX,  y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 2 TL BL BR
-        [{ x: rightX, y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 3 TR BL BR
-        [{ x: centerX, y: topY },   { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 4 top-center BL BR
+        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: leftX,   y: bottomY }],
+        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: rightX,  y: bottomY }],
+        [{ x: leftX,  y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: rightX, y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: centerX, y: topY },   { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
       ],
       4: [
-        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],  // 0 four corners
-        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }],  // 1 top+mid
-        [{ x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],  // 2 mid+bot
-        [{ x: centerX, y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: centerX, y: bottomY }],  // 3 diamond
-        [{ x: leftX,   y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: topY },    { x: rightX,  y: bottomY }],  // 4 V-columns
+        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }],
+        [{ x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: centerX, y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: centerX, y: bottomY }],
+        [{ x: leftX,   y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: topY },    { x: rightX,  y: bottomY }],
+      ],
+      5: [
+        [{ x: leftX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: bottomY }, { x: rightX, y: bottomY }, { x: centerX, y: centerY }],
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: topY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: midLeftX, y: topY }, { x: midRightX, y: topY }, { x: leftX, y: bottomY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: centerX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: leftX, y: thirdY }, { x: rightX, y: thirdY }, { x: leftX, y: twoThirdY }, { x: rightX, y: twoThirdY }, { x: centerX, y: centerY }],
+      ],
+      6: [
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: bottomY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: leftX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: leftX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: midLeftX, y: topY }, { x: midRightX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: centerY }, { x: leftX, y: centerY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: centerX, y: topY }, { x: leftX, y: thirdY }, { x: rightX, y: thirdY }, { x: leftX, y: twoThirdY }, { x: rightX, y: twoThirdY }, { x: centerX, y: bottomY }],
       ],
     };
 
@@ -646,15 +659,18 @@ export function App() {
     const positions = ARRANGEMENTS[count][cycleIdx];
     setCubeLayoutCycle((prev) => ({ ...prev, [count]: (cycleIdx + 1) % ARRANGEMENTS[count].length }));
 
+    // Randomize sizes per card — vary from 0.7x to 1.3x base size
+    const sizeScales = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
     const cards: CardModel[] = positions.map((pos, idx) => {
       cardCounter += 1;
+      const scale = sizeScales[Math.floor(Math.random() * sizeScales.length)];
       return {
         id: `card-${cardCounter}`,
         label: `Card ${cardCounter}`,
-        x: pos.x,
-        y: pos.y,
-        w: baseW,
-        h: baseH,
+        x: pos.x + Math.round((Math.random() - 0.5) * 30),
+        y: pos.y + Math.round((Math.random() - 0.5) * 20),
+        w: Math.round(baseW * scale),
+        h: Math.round(baseH * scale),
         zIndex: idx + 1,
         lockSize: false,
         lockPosition: false
@@ -837,14 +853,10 @@ export function App() {
           deleteSelectedCard={deleteSelectedCard}
           isPageLocked={cardState.lockPage}
           hasSelectedCard={!!selectedCard}
-          slug={slug}
-          onSlugChange={handleSlugChange}
-          isSaved={isSaved}
-          onSave={handleSave}
-          tooltipOpen={tooltipOpen}
-          setTooltipOpen={setTooltipOpen}
           onDeploy={handleDeployGateway}
           deploying={deploying}
+          tooltipOpen={tooltipOpen}
+          setTooltipOpen={setTooltipOpen}
         />
       )}
       leftRail={(
@@ -870,6 +882,8 @@ export function App() {
           lockAllPages={lockAllPages}
           unlockAllPages={unlockAllPages}
           resetWorkspace={resetWorkspace}
+          isSaved={isSaved}
+          onSave={handleSave}
         />
       )}
       workspace={(
@@ -931,7 +945,7 @@ export function App() {
           <div className="deployModalOverlay" onClick={() => setDeployModal(null)}>
             <div className="deployModalCard" onClick={(e) => e.stopPropagation()}>
               <button className="deployModalClose" onClick={() => setDeployModal(null)}>×</button>
-              <div className="deployModalTitle">Welcome to Gateway</div>
+              <div className="deployModalTitle">Welcome to BIZ PAGES</div>
               {deployModal.ok ? (
                 <div className="deployModalSubtitle">Your page has been deployed. Share these links:</div>
               ) : (
@@ -1034,12 +1048,12 @@ export function App() {
             </>
           )}
 
-          {/* Step 5: Save + Deploy — finger points at SAVE then slides to Deploy Gateway */}
+          {/* Step 5: Save + Publish — finger points at SAVE then slides to Publish Pages */}
           {ghostStep === 5 && (
             <>
               <div className="ghostLabel ghostLabelDeploy">
                 <div>SAVE</div>
-                <div>Deploy Gateway</div>
+                <div>Publish Pages</div>
               </div>
               <div className="ghostFingerAbs ghostFingerSave">
                 <svg className="ghostFingerSvg" viewBox="0 0 24 24" width="32" height="32" fill="none"><path d="M12 1a3 3 0 0 0-3 3v7.27l-1.54-1.55a2.1 2.1 0 0 0-2.97 2.97l5.22 5.22A5 5 0 0 0 13.24 20H16a5 5 0 0 0 5-5v-4a3 3 0 0 0-3-3h-.5a2.5 2.5 0 0 0-2.5 2v-.5A2.5 2.5 0 0 0 12.5 7H12V4a3 3 0 0 0-3-3h3z" fill="rgba(255,255,255,0.92)" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5"/></svg>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { thumbnailUrl } from "../../../core/assetResolver";
 import { pageDataToCardState } from "../../../domain/editor/selectors";
@@ -27,8 +28,12 @@ export function WallpaperRail(props: {
   lockAllPages: () => void;
   unlockAllPages: () => void;
   resetWorkspace: () => void;
+  isSaved: boolean;
+  onSave: () => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
+  const [signUpOpen, setSignUpOpen] = useState(false);
+
   return (
     <aside className="leftRail">
       <div className="railHeader">
@@ -40,10 +45,9 @@ export function WallpaperRail(props: {
             props.setLeftMode(next === "wallpaper" ? "create" : "gateway");
           }}
         >
-          {props.leftRailTab === "wallpaper" ? "Wallpaper" : "Pages"}
+          {props.leftRailTab === "wallpaper" ? "WALLPAPER" : "PAGES"}
         </button>
-        <button className="railHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === props.leftRailTab ? null : props.leftRailTab); }} title="Help">?</button>
-        {props.tooltipOpen === props.leftRailTab && (
+        {props.tooltipOpen === "all" && (
           <div className="tooltipCard">
             {(props.tooltipHelp[props.leftRailTab] ?? []).map((line, i) => <div key={i} className="tooltipLine">{line}</div>)}
           </div>
@@ -78,19 +82,68 @@ export function WallpaperRail(props: {
                 <div key={item.key} className="leftRailPageRow">
                   <button className={`leftRailTabBtn leftRailTabBtnFlex ${isCurrentPage ? "isActive" : ""} ${isLocked ? "isPageLocked" : ""}`} onClick={() => props.switchPage(item.key)}>{item.label}</button>
                   <button className={`cardLockBtn ${isLocked ? "isLocked" : "isUnlocked"}`} onClick={(e) => { e.stopPropagation(); props.togglePageLock(item.key); }} title={isLocked ? "Unlock page" : "Lock page"}>
-                    {isLocked ? <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg> : <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg>}
+                    {isLocked ? <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg> : <svg viewBox="0 0 14 14" width="13" height="13" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M4.5 6V4a2.5 2.5 0 0 1 5 0" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
                   </button>
                 </div>
               );
             })}
-            <button className={`leftRailTabBtn ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock All Pages" : "Lock All Pages"}</button>
-            <button className="leftRailTabBtn" onClick={props.resetWorkspace}>Reset</button>
+
+            {/* Row: Lock | Save */}
+            <div className="leftRailActionRow">
+              <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
+              <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
+            </div>
+
+            {/* Row: Sign Up | Reset */}
+            <div className="leftRailActionRow">
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
+            </div>
+
+            {/* Always-open login inputs */}
+            <div className="loginPanel">
+              <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
+              <input className="loginPillInput" type="password" placeholder="********************" />
+            </div>
+
+            {/* Row: Login | ? (below inputs) */}
+            <div className="leftRailActionRow">
+              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+            </div>
+          </div>
+
+          {/* Forgot Password tile — overlays XYZ logo area */}
+          <div className="forgotPwWrap">
+            {props.tooltipOpen === "all" && (
+              <div className="forgotPwCard">
+                <div className="forgotPwTitle">Forgot Password</div>
+                <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
+                <button className="forgotPwSubmit">Submit</button>
+              </div>
+            )}
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">
             <img src={LEFT_AD_IMAGE} alt="XYZ Labs" className="gatewayInfoImage" draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           </div>
         </>
+      )}
+
+      {signUpOpen && (
+        <div className="signUpOverlay" onClick={() => setSignUpOpen(false)}>
+          <div className="signUpCard" onClick={(e) => e.stopPropagation()}>
+            <button className="signUpClose" onClick={() => setSignUpOpen(false)}>&times;</button>
+            <div className="signUpTitle">Create Account</div>
+            <button className="signUpProviderBtn">Continue with Google</button>
+            <button className="signUpProviderBtn">Continue with Apple</button>
+            <div className="signUpDivider"><span>or</span></div>
+            <input className="signUpInput" type="text" placeholder="Username" />
+            <input className="signUpInput" type="email" placeholder="Email" />
+            <input className="signUpInput" type="password" placeholder="Password" />
+            <button className="signUpSubmitBtn">Create Account</button>
+          </div>
+        </div>
       )}
     </aside>
   );

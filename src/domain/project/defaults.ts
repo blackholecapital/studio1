@@ -24,7 +24,7 @@ export const PAGE_ROUTES: Record<PageKey, string> = {
 
 /** Short display titles for page keys. */
 export const PAGE_SHORT_TITLES: Record<PageKey, string> = {
-  p1: "Gateway",
+  p1: "Home",
   p2: "Members",
   p3: "Access",
   p4: "Exclusive",
