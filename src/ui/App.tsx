@@ -127,7 +127,7 @@ export function App() {
   const [visibleMediaCount, setVisibleMediaCount] = useState(CATALOG_PAGE_SIZE);
   const railScrollRef = useRef<HTMLDivElement | null>(null);
   // Tracks arrangement cycle index for each cube-button count (wraps every 5)
-  const [cubeLayoutCycle, setCubeLayoutCycle] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0 });
+  const [cubeLayoutCycle, setCubeLayoutCycle] = useState<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 });
 
   // ── Ghost Flow (first-time user onboarding — runs on every page load) ──
   const [ghostStep, setGhostStep] = useState<number | null>(0);
@@ -591,7 +591,7 @@ export function App() {
     }));
   }
 
-  function applyCubeLayout(count: 1 | 2 | 3 | 4) {
+  function applyCubeLayout(count: 1 | 2 | 3 | 4 | 5 | 6) {
     if (cardState.lockPage) return;
     const baseW = 260;
     const baseH = 180;
@@ -604,37 +604,54 @@ export function App() {
     const topY    = margin;
     const bottomY = Math.round(wsH - baseH - margin);
     const centerY = Math.round((wsH - baseH) / 2);
+    const midLeftX  = Math.round(wsW * 0.32 - baseW / 2);
+    const midRightX = Math.round(wsW * 0.68 - baseW / 2);
+    const thirdY    = Math.round(wsH * 0.33 - baseH / 2);
+    const twoThirdY = Math.round(wsH * 0.67 - baseH / 2);
 
-    // Each button cycles through 5 arrangement presets (wraps back on 6th click).
-    // Default (0) for each count is corner-based.
-    const ARRANGEMENTS: Record<1|2|3|4, Array<Array<{x:number;y:number}>>> = {
+    // Each button cycles through arrangement presets with randomized sizing.
+    const ARRANGEMENTS: Record<1|2|3|4|5|6, Array<Array<{x:number;y:number}>>> = {
       1: [
-        [{ x: centerX, y: centerY }],                             // 0 center
-        [{ x: leftX,   y: topY }],                               // 1 top-left
-        [{ x: rightX,  y: topY }],                               // 2 top-right
-        [{ x: rightX,  y: bottomY }],                            // 3 bottom-right
-        [{ x: leftX,   y: bottomY }],                            // 4 bottom-left
+        [{ x: centerX, y: centerY }],
+        [{ x: leftX,   y: topY }],
+        [{ x: rightX,  y: topY }],
+        [{ x: rightX,  y: bottomY }],
+        [{ x: leftX,   y: bottomY }],
       ],
       2: [
-        [{ x: leftX, y: topY },    { x: rightX, y: topY }],     // 0 TL TR (top corners)
-        [{ x: leftX, y: centerY }, { x: rightX, y: centerY }],  // 1 H-center
-        [{ x: leftX, y: bottomY }, { x: rightX, y: bottomY }],  // 2 H-bottom
-        [{ x: leftX, y: topY },    { x: leftX,  y: bottomY }],  // 3 V-left
-        [{ x: rightX, y: topY },   { x: rightX, y: bottomY }],  // 4 V-right
+        [{ x: leftX, y: topY },    { x: rightX, y: topY }],
+        [{ x: leftX, y: centerY }, { x: rightX, y: centerY }],
+        [{ x: leftX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: leftX, y: topY },    { x: leftX,  y: bottomY }],
+        [{ x: rightX, y: topY },   { x: rightX, y: bottomY }],
       ],
       3: [
-        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: leftX,   y: bottomY }],  // 0 TL TR BL
-        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: rightX,  y: bottomY }],  // 1 TL TR BR
-        [{ x: leftX,  y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 2 TL BL BR
-        [{ x: rightX, y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 3 TR BL BR
-        [{ x: centerX, y: topY },   { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],  // 4 top-center BL BR
+        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: leftX,   y: bottomY }],
+        [{ x: leftX,  y: topY },    { x: rightX, y: topY },    { x: rightX,  y: bottomY }],
+        [{ x: leftX,  y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: rightX, y: topY },    { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: centerX, y: topY },   { x: leftX,  y: bottomY }, { x: rightX,  y: bottomY }],
       ],
       4: [
-        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],  // 0 four corners
-        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }],  // 1 top+mid
-        [{ x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],  // 2 mid+bot
-        [{ x: centerX, y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: centerX, y: bottomY }],  // 3 diamond
-        [{ x: leftX,   y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: topY },    { x: rightX,  y: bottomY }],  // 4 V-columns
+        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: leftX,   y: topY },    { x: rightX,  y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }],
+        [{ x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: leftX,   y: bottomY }, { x: rightX,  y: bottomY }],
+        [{ x: centerX, y: topY },    { x: leftX,   y: centerY }, { x: rightX,  y: centerY }, { x: centerX, y: bottomY }],
+        [{ x: leftX,   y: topY },    { x: leftX,   y: bottomY }, { x: rightX,  y: topY },    { x: rightX,  y: bottomY }],
+      ],
+      5: [
+        [{ x: leftX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: bottomY }, { x: rightX, y: bottomY }, { x: centerX, y: centerY }],
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: topY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: midLeftX, y: topY }, { x: midRightX, y: topY }, { x: leftX, y: bottomY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: centerX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: leftX, y: thirdY }, { x: rightX, y: thirdY }, { x: leftX, y: twoThirdY }, { x: rightX, y: twoThirdY }, { x: centerX, y: centerY }],
+      ],
+      6: [
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: bottomY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: leftX, y: topY }, { x: rightX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: leftX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: midLeftX, y: topY }, { x: midRightX, y: topY }, { x: leftX, y: centerY }, { x: rightX, y: centerY }, { x: midLeftX, y: bottomY }, { x: midRightX, y: bottomY }],
+        [{ x: leftX, y: topY }, { x: centerX, y: topY }, { x: rightX, y: centerY }, { x: leftX, y: centerY }, { x: centerX, y: bottomY }, { x: rightX, y: bottomY }],
+        [{ x: centerX, y: topY }, { x: leftX, y: thirdY }, { x: rightX, y: thirdY }, { x: leftX, y: twoThirdY }, { x: rightX, y: twoThirdY }, { x: centerX, y: bottomY }],
       ],
     };
 
@@ -642,15 +659,18 @@ export function App() {
     const positions = ARRANGEMENTS[count][cycleIdx];
     setCubeLayoutCycle((prev) => ({ ...prev, [count]: (cycleIdx + 1) % ARRANGEMENTS[count].length }));
 
+    // Randomize sizes per card — vary from 0.7x to 1.3x base size
+    const sizeScales = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3];
     const cards: CardModel[] = positions.map((pos, idx) => {
       cardCounter += 1;
+      const scale = sizeScales[Math.floor(Math.random() * sizeScales.length)];
       return {
         id: `card-${cardCounter}`,
         label: `Card ${cardCounter}`,
-        x: pos.x,
-        y: pos.y,
-        w: baseW,
-        h: baseH,
+        x: pos.x + Math.round((Math.random() - 0.5) * 30),
+        y: pos.y + Math.round((Math.random() - 0.5) * 20),
+        w: Math.round(baseW * scale),
+        h: Math.round(baseH * scale),
         zIndex: idx + 1,
         lockSize: false,
         lockPosition: false
@@ -835,6 +855,8 @@ export function App() {
           hasSelectedCard={!!selectedCard}
           onDeploy={handleDeployGateway}
           deploying={deploying}
+          tooltipOpen={tooltipOpen}
+          setTooltipOpen={setTooltipOpen}
         />
       )}
       leftRail={(

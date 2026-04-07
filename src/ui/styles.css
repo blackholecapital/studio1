@@ -108,7 +108,7 @@ button {
   font-size: 0.8rem;
   white-space: nowrap;
   color: rgba(210, 235, 255, 0.75);
-  cursor: default;
+  cursor: pointer;
   transition: color 0.15s;
 }
 
@@ -239,6 +239,12 @@ button {
   display: inline-block;
   width: 120px;
   text-align: center;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.topStripTitle:hover {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .topStripRight {
@@ -407,6 +413,16 @@ button {
   flex-shrink: 0;
 }
 
+.leftRailActionRow {
+  display: flex;
+  gap: 6px;
+}
+
+.leftRailTabBtnHalf {
+  flex: 1;
+  text-align: center;
+}
+
 .leftRailTabBtn {
   border: 1px solid transparent;
   background: transparent;
@@ -493,7 +509,8 @@ button {
 
 .loginLinks {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   padding: 2px 0;
 }
 
@@ -511,6 +528,12 @@ button {
 
 .loginLinkBtn:hover {
   color: rgba(255, 255, 255, 0.95);
+}
+
+.loginLinkHelp {
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 /* ── Sign Up modal ── */
@@ -1194,6 +1217,18 @@ button {
   grid-template-columns: 1fr 1fr;
 }
 
+.cubeButtonFive {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.cubeButtonFive .cubeDot:nth-child(4) {
+  grid-column: 1;
+}
+
+.cubeButtonSix {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 /* ── Cube layout buttons in header strip ─────────────────────────────────── */
 .cubeButtonsHeader {
   display: flex;
@@ -1205,6 +1240,10 @@ button {
   background: transparent;
   border: none;
   box-shadow: none;
+}
+
+.cubeButtonsRight {
+  margin-left: 4px;
 }
 
 .cubeButtonHeader {

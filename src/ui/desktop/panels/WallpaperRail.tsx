@@ -32,7 +32,6 @@ export function WallpaperRail(props: {
   onSave: () => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
-  const [loginOpen, setLoginOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
 
   return (
@@ -88,24 +87,29 @@ export function WallpaperRail(props: {
                 </div>
               );
             })}
-            <div className="leftRailPageRow">
-              <button className={`leftRailTabBtn leftRailTabBtnFlex ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
-              <button className="leftRailHelpBtn" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
-            </div>
-            <button className={`leftRailTabBtn ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
-            <button className="leftRailTabBtn" onClick={props.resetWorkspace}>Reset</button>
-            <button className="leftRailTabBtn" onClick={() => setLoginOpen(!loginOpen)}>Login</button>
 
-            {loginOpen && (
-              <div className="loginPanel">
-                <input className="loginPillInput" type="text" placeholder="xyz LAES" />
-                <input className="loginPillInput" type="password" placeholder="******" />
-                <div className="loginLinks">
-                  <button className="loginLinkBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
-                  <button className="loginLinkBtn">Forgot Password</button>
-                </div>
+            {/* Row: Lock | Save */}
+            <div className="leftRailActionRow">
+              <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.allPagesLocked ? "isPageLocked" : ""}`} onClick={props.allPagesLocked ? props.unlockAllPages : props.lockAllPages}>{props.allPagesLocked ? "Unlock" : "Lock"}</button>
+              <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
+            </div>
+
+            {/* Row: Login | Reset */}
+            <div className="leftRailActionRow">
+              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
+            </div>
+
+            {/* Always-open login inputs */}
+            <div className="loginPanel">
+              <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
+              <input className="loginPillInput" type="password" placeholder="********************" />
+              <div className="loginLinks">
+                <button className="loginLinkBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+                <button className="loginLinkBtn">Forgot Password</button>
+                <button className="loginLinkBtn loginLinkHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">
