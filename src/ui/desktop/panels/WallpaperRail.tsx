@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { thumbnailUrl } from "../../../core/assetResolver";
 import { pageDataToCardState } from "../../../domain/editor/selectors";
@@ -31,6 +32,9 @@ export function WallpaperRail(props: {
   onSave: () => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [signUpOpen, setSignUpOpen] = useState(false);
+
   return (
     <aside className="leftRail">
       <div className="railHeader">
@@ -90,13 +94,40 @@ export function WallpaperRail(props: {
             </div>
             <button className={`leftRailTabBtn ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             <button className="leftRailTabBtn" onClick={props.resetWorkspace}>Reset</button>
-            <button className="leftRailTabBtn">Login</button>
+            <button className="leftRailTabBtn" onClick={() => setLoginOpen(!loginOpen)}>Login</button>
+
+            {loginOpen && (
+              <div className="loginPanel">
+                <input className="loginPillInput" type="text" placeholder="xyz LAES" />
+                <input className="loginPillInput" type="password" placeholder="******" />
+                <div className="loginLinks">
+                  <button className="loginLinkBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+                  <button className="loginLinkBtn">Forgot Password</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">
             <img src={LEFT_AD_IMAGE} alt="XYZ Labs" className="gatewayInfoImage" draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           </div>
         </>
+      )}
+
+      {signUpOpen && (
+        <div className="signUpOverlay" onClick={() => setSignUpOpen(false)}>
+          <div className="signUpCard" onClick={(e) => e.stopPropagation()}>
+            <button className="signUpClose" onClick={() => setSignUpOpen(false)}>&times;</button>
+            <div className="signUpTitle">Create Account</div>
+            <button className="signUpProviderBtn">Continue with Google</button>
+            <button className="signUpProviderBtn">Continue with Apple</button>
+            <div className="signUpDivider"><span>or</span></div>
+            <input className="signUpInput" type="text" placeholder="Username" />
+            <input className="signUpInput" type="email" placeholder="Email" />
+            <input className="signUpInput" type="password" placeholder="Password" />
+            <button className="signUpSubmitBtn">Create Account</button>
+          </div>
+        </div>
       )}
     </aside>
   );

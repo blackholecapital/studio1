@@ -136,9 +136,9 @@ export function App() {
   const endGhostFlow = useCallback(() => {
     setGhostStep(null);
     if (ghostTimerRef.current) { clearTimeout(ghostTimerRef.current); ghostTimerRef.current = null; }
-    // Restore rails to default state in case ghost flow interrupted mid-cycle
-    setLeftRailTab("wallpaper");
-    setLeftMode("create");
+    // Leave pages tile open at end of preview
+    setLeftRailTab("pages");
+    setLeftMode("gateway");
     setActiveTab("content");
     markGhostFlowSeen();
   }, []);
@@ -163,18 +163,14 @@ export function App() {
       return () => { clearTimeout(wallpaperTimer); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
-    // Step 2 (3s): cycle left rail button — Wallpaper → Pages → Wallpaper
+    // Step 2 (2.5s): cycle left rail button — Wallpaper → Pages (stays on pages)
     if (ghostStep === 2) {
       const toPages = setTimeout(() => {
         setLeftRailTab("pages");
         setLeftMode("gateway");
       }, 1000);
-      const backToWallpaper = setTimeout(() => {
-        setLeftRailTab("wallpaper");
-        setLeftMode("create");
-      }, 1800);
-      ghostTimerRef.current = setTimeout(() => setGhostStep(3), 3000);
-      return () => { clearTimeout(toPages); clearTimeout(backToWallpaper); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
+      ghostTimerRef.current = setTimeout(() => setGhostStep(3), 2500);
+      return () => { clearTimeout(toPages); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
     // Step 3 (3s): drag content — apply c4444 to center tile on completion
