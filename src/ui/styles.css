@@ -99,7 +99,10 @@ button {
 .topStripLeft {
   display: flex;
   align-items: center;
-  gap: 28px;
+  justify-content: space-between;
+  gap: 0;
+  /* stretch so brand sits over left rail, cubes sit near center arrows */
+  flex: 1;
 }
 
 .brandMark {
@@ -507,33 +510,53 @@ button {
   border-color: rgba(165, 211, 255, 0.75);
 }
 
-.loginLinks {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 2px 0;
-}
-
-.loginLinkBtn {
-  background: transparent;
-  border: none;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: rgba(210, 235, 255, 0.65);
-  cursor: pointer;
-  padding: 2px 0;
-  transition: color 0.15s;
-}
-
-.loginLinkBtn:hover {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.loginLinkHelp {
-  font-size: 0.92rem;
+/* Big ? button in pages panel */
+.leftRailBigHelp {
+  font-size: 1.25rem;
   font-weight: 800;
-  line-height: 1;
+  text-align: center;
+}
+
+/* Forgot Password tile — appears with help tooltips */
+.forgotPwCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(10, 18, 32, 0.92);
+  border: 1px solid rgba(140, 210, 255, 0.30);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(100, 190, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: tooltipFadeIn 0.15s ease;
+}
+
+.forgotPwTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(210, 235, 255, 0.85);
+  letter-spacing: 0.04em;
+}
+
+.forgotPwSubmit {
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(140, 210, 255, 0.35);
+  background: rgba(140, 210, 255, 0.08);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(210, 235, 255, 0.85);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.forgotPwSubmit:hover {
+  background: rgba(140, 210, 255, 0.18);
+  border-color: rgba(140, 210, 255, 0.55);
 }
 
 /* ── Sign Up modal ── */
@@ -1243,7 +1266,7 @@ button {
 }
 
 .cubeButtonsRight {
-  margin-left: 4px;
+  margin-left: 12px;
 }
 
 .cubeButtonHeader {

@@ -94,22 +94,29 @@ export function WallpaperRail(props: {
               <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             </div>
 
-            {/* Row: Login | Reset */}
+            {/* Sign Up — full width */}
+            <button className="leftRailTabBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+
+            {/* Row: Login | ? */}
             <div className="leftRailActionRow">
               <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
-              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
 
             {/* Always-open login inputs */}
             <div className="loginPanel">
               <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
               <input className="loginPillInput" type="password" placeholder="********************" />
-              <div className="loginLinks">
-                <button className="loginLinkBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
-                <button className="loginLinkBtn">Forgot Password</button>
-                <button className="loginLinkBtn loginLinkHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
-              </div>
             </div>
+
+            {/* Forgot Password tile — appears with help tooltips */}
+            {props.tooltipOpen === "all" && (
+              <div className="forgotPwCard">
+                <div className="forgotPwTitle">Forgot Password</div>
+                <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
+                <button className="forgotPwSubmit">Submit</button>
+              </div>
+            )}
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">
