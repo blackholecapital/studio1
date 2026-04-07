@@ -94,13 +94,10 @@ export function WallpaperRail(props: {
               <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             </div>
 
-            {/* Sign Up — full width */}
-            <button className="leftRailTabBtn" onClick={() => setSignUpOpen(true)}>Sign Up</button>
-
-            {/* Row: Login | ? */}
+            {/* Row: Sign Up | Reset */}
             <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
-              <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
             </div>
 
             {/* Always-open login inputs */}
@@ -109,7 +106,15 @@ export function WallpaperRail(props: {
               <input className="loginPillInput" type="password" placeholder="********************" />
             </div>
 
-            {/* Forgot Password tile — appears with help tooltips */}
+            {/* Row: Login | ? (below inputs) */}
+            <div className="leftRailActionRow">
+              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+            </div>
+          </div>
+
+          {/* Forgot Password tile — overlays XYZ logo area */}
+          <div className="forgotPwWrap">
             {props.tooltipOpen === "all" && (
               <div className="forgotPwCard">
                 <div className="forgotPwTitle">Forgot Password</div>
