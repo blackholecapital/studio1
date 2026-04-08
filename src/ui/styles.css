@@ -98,8 +98,7 @@ button {
 .topStripLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
-  /* brandMark + cubes sit over left rail area */
+  gap: 0;
   flex-shrink: 0;
 }
 
@@ -111,6 +110,10 @@ button {
   color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
   transition: color 0.15s;
+  /* Center over left rail */
+  width: var(--layout-sidebar-width);
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .brandMark:hover {
@@ -512,9 +515,15 @@ button {
 
 /* Big ? button in pages panel */
 .leftRailBigHelp {
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   font-weight: 800;
   text-align: center;
+  flex: 0 0 auto;
+  width: 34px;
+}
+
+.leftRailJoinRow {
+  gap: 4px;
 }
 
 /* Forgot Password wrapper — overlays XYZ logo, doesn't push layout */
@@ -1253,15 +1262,15 @@ button {
 }
 
 .cubeButtonFive {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
-.cubeButtonFive .cubeDot:nth-child(4) {
+.cubeButtonFive .cubeDot:nth-child(5) {
   grid-column: 1;
 }
 
 .cubeButtonSix {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
 /* ── Cube layout buttons in header strip ─────────────────────────────────── */
@@ -1275,10 +1284,12 @@ button {
   background: transparent;
   border: none;
   box-shadow: none;
+  /* Push left cubes toward center */
+  margin-left: 24px;
 }
 
 .cubeButtonsRight {
-  margin-left: 16px;
+  margin-left: 24px;
   gap: 6px;
 }
 

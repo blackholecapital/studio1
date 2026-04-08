@@ -94,9 +94,9 @@ export function WallpaperRail(props: {
               <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             </div>
 
-            {/* Row: Sign Up | Reset */}
+            {/* Row: Login | Reset */}
             <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
               <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
             </div>
 
@@ -106,10 +106,10 @@ export function WallpaperRail(props: {
               <input className="loginPillInput" type="password" placeholder="********************" />
             </div>
 
-            {/* Row: Login | ? (below inputs) */}
-            <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
-              <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+            {/* Row: Join | ? */}
+            <div className="leftRailActionRow leftRailJoinRow">
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Join</button>
+              <button className="leftRailTabBtn leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
           </div>
 
