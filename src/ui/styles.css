@@ -105,6 +105,8 @@ button {
 
 .brandMark {
   font-weight: 800;
+  position: relative;
+  left: -6px;
   letter-spacing: 0.06em;
   font-size: 0.8rem;
   white-space: nowrap;
@@ -515,6 +517,7 @@ button {
   font-size: 1.25rem;
   font-weight: 800;
   text-align: center;
+  transform: translateX(-6px);
 }
 
 /* Forgot Password wrapper — overlays XYZ logo, doesn't push layout */
@@ -792,6 +795,10 @@ button {
   gap: 6px;
 }
 
+.leftRailPageRow .cardLockBtn {
+  transform: translateX(6px);
+}
+
 /* Page name button takes all available width */
 .leftRailTabBtnFlex {
   flex: 1;
@@ -824,7 +831,7 @@ button {
 .workspaceTint {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.14);
   pointer-events: none;
   z-index: 0;
   border-radius: inherit;
