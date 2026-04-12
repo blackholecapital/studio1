@@ -47,10 +47,10 @@ export const DESKTOP_INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c5
 export const MOBILE_INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c4444.png";
 
 /** Left ad slot default image. */
-export const LEFT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c5555.png";
+export const LEFT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c77.png";
 
 /** Right ad slot default image. */
-export const RIGHT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c2232.png";
+export const RIGHT_AD_IMAGE = "https://media.xyz-labs.xyz/content/c77.png";
 
 // ── Catalog pagination ───────────────────────────────────────────────────────
 
