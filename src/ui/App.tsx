@@ -70,7 +70,7 @@ function makeDefaultCard(wsW?: number, wsH?: number): CardModel {
     lockSize: false,
     lockPosition: false,
     contentImage: INSTRUCTIONS_IMAGE,
-    contentCode: "c5555",
+    contentCode: "c813",
     contentDisplay: "image"
   };
 }
@@ -180,7 +180,7 @@ export function App() {
         setCardState((curr) => ({
           ...curr,
           cards: curr.cards.map((c) =>
-            c.contentCode === "c5555"
+            c.contentCode === "c813"
               ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c4444.png", contentCode: "c4444" }
               : c
           )
@@ -275,7 +275,7 @@ export function App() {
     setCardState((curr) => ({
       ...curr,
       cards: curr.cards.map((c) =>
-        c.contentCode === "c5555"
+        c.contentCode === "c813"
           ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
           : c
       )
@@ -321,7 +321,7 @@ export function App() {
           const wsW = ws.offsetWidth;
           const wsH = ws.offsetHeight;
           fallback.cardState.cards = fallback.cardState.cards.map((c) =>
-            c.contentCode === "c5555"
+            c.contentCode === "c813"
               ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
               : c
           );
@@ -385,7 +385,7 @@ export function App() {
         const wsW = ws.offsetWidth;
         const wsH = ws.offsetHeight;
         fallback.cardState.cards = fallback.cardState.cards.map((c) =>
-          c.contentCode === "c5555"
+          c.contentCode === "c813"
             ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
             : c
         );
@@ -558,7 +558,7 @@ export function App() {
     const wsH = workspaceRef.current?.offsetHeight ?? layoutConfig.workspace.height;
     const centeredCard = makeDefaultCard(wsW, wsH);
     centeredCard.contentImage = INSTRUCTIONS_IMAGE;
-    centeredCard.contentCode = "c5555";
+    centeredCard.contentCode = "c813";
     centeredCard.contentDisplay = "image";
     setCardState({ cards: [centeredCard], selectedCardId: centeredCard.id, lockSize: false, lockPosition: false, lockPage: false });
     setWallpaper(DEFAULT_WALLPAPER);

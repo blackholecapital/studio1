@@ -41,7 +41,7 @@ export const GATEWAY_BASE = "https://gateway.xyz-labs.xyz";
 // ── Default content images ───────────────────────────────────────────────────
 
 /** Instruction card image shown on new desktop cards. */
-export const DESKTOP_INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c5555.png";
+export const DESKTOP_INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c813.png";
 
 /** Instruction card image shown on new mobile cards. */
 export const MOBILE_INSTRUCTIONS_IMAGE = "https://media.xyz-labs.xyz/content/c4444.png";
