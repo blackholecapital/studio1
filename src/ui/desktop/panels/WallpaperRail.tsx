@@ -64,7 +64,7 @@ export function WallpaperRail(props: {
                 onClick={() => { if (props.isPageLocked) return; props.setWallpaper(item.url); props.setWallpaperPreview(null); }}
                 title={item.code}
               >
-                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
+                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
               </button>
             ))}
           </section>

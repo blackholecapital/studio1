@@ -77,7 +77,7 @@ export function MobileContentPanel(props: {
               <div key={item.code} className="contentThumb contentThumbUser" draggable
                 onDragStart={(e) => props.handleContentDragStart(e, item.url, item.code)}
                 onClick={() => props.applyContentToCard(item.url, item.code)} title={item.code}>
-                <img src={item.url} alt={item.code} draggable={false}
+                <img src={item.url} alt={item.code} draggable={false} loading="lazy" decoding="async"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 <span className="contentThumbCode">{item.code}</span>
               </div>
@@ -86,7 +86,7 @@ export function MobileContentPanel(props: {
               <div key={item.code} className="contentThumb" draggable
                 onDragStart={(e) => props.handleContentDragStart(e, item.url, item.code)}
                 onClick={() => props.applyContentToCard(item.url, item.code)} title={item.code}>
-                <img src={item.url} alt={item.code} draggable={false}
+                <img src={item.url} alt={item.code} draggable={false} loading="lazy" decoding="async"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
               </div>
             ))}

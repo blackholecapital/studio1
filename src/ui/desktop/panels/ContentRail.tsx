@@ -59,12 +59,12 @@ export function ContentRail(props: {
             </button>
             {props.uploadedContents.map((item) => (
               <div key={item.url} className="contentThumb contentThumbUploaded" draggable onDragStart={(e) => props.handleContentDragStart(e, item.url, item.code)} title={item.name}>
-                <img src={item.url} alt={item.name} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <img src={item.url} alt={item.name} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
               </div>
             ))}
             {contentCatalog.map((item) => (
               <div key={item.code} className="contentThumb" draggable onDragStart={(e) => props.handleContentDragStart(e, item.url, item.code)} title={item.code}>
-                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
               </div>
             ))}
           </section>
@@ -105,7 +105,7 @@ export function ContentRail(props: {
           <section className="skinTray" aria-label="Skin picker">
             {skinCatalog.map((skin) => (
               <div key={skin.id} className="skinThumb" draggable={!props.cardStateLocked} onDragStart={(e) => props.handleSkinDragStart(e as unknown as DragEvent, skin.id)} title={skin.name}>
-                <img src={thumbnailUrl(skin.thumbnail)} alt={skin.name} draggable={false} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <img src={thumbnailUrl(skin.thumbnail)} alt={skin.name} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 <span className="skinThumbLabel">{skin.name}</span>
               </div>
             ))}
