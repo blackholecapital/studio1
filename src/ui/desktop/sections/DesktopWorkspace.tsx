@@ -70,11 +70,12 @@ export function DesktopWorkspace(props: {
       {props.page !== "p4" && props.cardState.cards.map((card) => {
         const isSelected = card.id === props.cardState.selectedCardId;
         const isOverlapping = props.overlappingCardIds.has(card.id);
+        const isEmpty = !card.contentImage && !card.contentUrl;
 
         return (
           <button
             key={card.id}
-            className={`floatingCard ${shapeClass} ${isSelected ? "isSelected" : ""} ${card.lockPosition ? "isPositionLocked" : ""} ${isOverlapping ? "isOverlapping" : ""} ${props.cardState.lockPage ? "isPageLocked" : ""}`}
+            className={`floatingCard ${shapeClass} ${isEmpty ? "isEmpty" : ""} ${isSelected ? "isSelected" : ""} ${card.lockPosition ? "isPositionLocked" : ""} ${isOverlapping ? "isOverlapping" : ""} ${props.cardState.lockPage ? "isPageLocked" : ""}`}
             style={{ left: card.x, top: card.y, width: card.w, height: card.h, zIndex: card.zIndex ?? 1 }}
             onPointerDown={(e) => {
               if (props.cardState.lockPage) return;
