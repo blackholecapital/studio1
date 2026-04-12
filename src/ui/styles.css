@@ -103,6 +103,11 @@ button {
   flex-shrink: 0;
 }
 
+.topStripLeft .cubeButtonsHeader {
+  /* Nudge cube layout buttons ~30% closer to the center page title */
+  margin-left: 80px;
+}
+
 .brandMark {
   font-weight: 800;
   position: relative;
@@ -887,7 +892,7 @@ button {
 /* ── Gateway info card (XYZ Labs sticker) ──────────────────────────────── */
 .gatewayInfoCard {
   flex-shrink: 0;
-  height: 168px;
+  height: 134px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1737,7 +1742,7 @@ button {
   margin-top: auto;
   margin-bottom: 14px;
   flex-shrink: 0;
-  height: 168px;
+  height: 134px;
   background: transparent;
   border: none;
   border-radius: 18px;
@@ -1747,7 +1752,7 @@ button {
 .rightRailLogoImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
