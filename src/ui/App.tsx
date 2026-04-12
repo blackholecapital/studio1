@@ -918,7 +918,6 @@ export function App() {
           onOpenJoin={() => openAuthModal("signup")}
           onOpenLogin={() => openAuthModal("login")}
           onOpenForgot={() => openAuthModal("forgot")}
-          onLoginSubmit={async (input) => { await auth.login(input); }}
         />
       )}
       workspace={(
