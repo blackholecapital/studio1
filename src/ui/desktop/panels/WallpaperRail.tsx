@@ -5,6 +5,7 @@ import { pageDataToCardState } from "../../../domain/editor/selectors";
 import { makeEmptyPage } from "../../../domain/project/defaults";
 import type { CardInteractionState, ProjectData, PageKey } from "../../../domain/project/types";
 import { LEFT_AD_IMAGE } from "../../../domain/editor/constants";
+import type { AuthUser } from "../../../services/auth/types";
 
 export function WallpaperRail(props: {
   leftRailTab: "wallpaper" | "pages";
@@ -30,9 +31,32 @@ export function WallpaperRail(props: {
   resetWorkspace: () => void;
   isSaved: boolean;
   onSave: () => void;
+  /** Auth wiring — owned by App.tsx so the modal renders at the overlay layer. */
+  currentUser: AuthUser | null;
+  onOpenJoin: () => void;
+  onOpenLogin: () => void;
+  onOpenForgot: () => void;
+  onLoginSubmit: (input: { username: string; password: string }) => Promise<void>;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
-  const [signUpOpen, setSignUpOpen] = useState(false);
+  const [railLoginUsername, setRailLoginUsername] = useState("");
+  const [railLoginPassword, setRailLoginPassword] = useState("");
+  const [railLoginBusy, setRailLoginBusy] = useState(false);
+  const [railLoginError, setRailLoginError] = useState<string | null>(null);
+
+  async function handleRailLogin() {
+    if (!railLoginUsername || !railLoginPassword) { props.onOpenLogin(); return; }
+    setRailLoginBusy(true);
+    setRailLoginError(null);
+    try {
+      await props.onLoginSubmit({ username: railLoginUsername.trim(), password: railLoginPassword });
+      setRailLoginPassword("");
+    } catch (e) {
+      setRailLoginError(e instanceof Error ? e.message : "Login failed");
+    } finally {
+      setRailLoginBusy(false);
+    }
+  }
 
   return (
     <aside className="leftRail">
@@ -94,32 +118,57 @@ export function WallpaperRail(props: {
               <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             </div>
 
-            {/* Row: Sign Up | Reset */}
+            {/* Row: Join / Sign out | Reset */}
             <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Join</button>
+              {props.currentUser ? (
+                <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.onOpenLogin} title={`Signed in as ${props.currentUser.username}`}>Account</button>
+              ) : (
+                <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.onOpenJoin}>Join</button>
+              )}
               <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
             </div>
 
-            {/* Always-open login inputs */}
+            {/* Always-open login inputs (quick sign-in from the rail) */}
             <div className="loginPanel">
-              <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
-              <input className="loginPillInput" type="password" placeholder="********************" />
+              <input
+                className="loginPillInput"
+                type="text"
+                placeholder={props.currentUser ? props.currentUser.username : "username"}
+                value={props.currentUser ? props.currentUser.username : railLoginUsername}
+                onChange={(e) => setRailLoginUsername(e.target.value)}
+                disabled={!!props.currentUser || railLoginBusy}
+              />
+              <input
+                className="loginPillInput"
+                type="password"
+                placeholder="********************"
+                value={railLoginPassword}
+                onChange={(e) => setRailLoginPassword(e.target.value)}
+                disabled={!!props.currentUser || railLoginBusy}
+                onKeyDown={(e) => { if (e.key === "Enter") handleRailLogin(); }}
+              />
             </div>
+            {railLoginError && <div className="railLoginError">{railLoginError}</div>}
 
             {/* Row: Login | ? (below inputs) */}
             <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf">Login</button>
+              <button
+                className="leftRailTabBtn leftRailTabBtnHalf"
+                onClick={props.currentUser ? props.onOpenLogin : handleRailLogin}
+                disabled={railLoginBusy}
+              >
+                {props.currentUser ? "Profile" : (railLoginBusy ? "…" : "Login")}
+              </button>
               <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
           </div>
 
-          {/* Forgot Password tile — overlays XYZ logo area */}
+          {/* Forgot Password launcher — opens the overlay AuthModal (no longer trapped inside this tile) */}
           <div className="forgotPwWrap">
             {props.tooltipOpen === "all" && (
               <div className="forgotPwCard">
                 <div className="forgotPwTitle">Forgot Password</div>
-                <input className="loginPillInput" type="text" placeholder="***xyz labs***" />
-                <button className="forgotPwSubmit">Submit</button>
+                <button className="forgotPwSubmit" onClick={props.onOpenForgot}>Recover account</button>
               </div>
             )}
           </div>
@@ -130,21 +179,6 @@ export function WallpaperRail(props: {
         </>
       )}
 
-      {signUpOpen && (
-        <div className="signUpOverlay" onClick={() => setSignUpOpen(false)}>
-          <div className="signUpCard" onClick={(e) => e.stopPropagation()}>
-            <button className="signUpClose" onClick={() => setSignUpOpen(false)}>&times;</button>
-            <div className="signUpTitle">Create Account</div>
-            <button className="signUpProviderBtn">Continue with Google</button>
-            <button className="signUpProviderBtn">Continue with Apple</button>
-            <div className="signUpDivider"><span>or</span></div>
-            <input className="signUpInput" type="text" placeholder="Username" />
-            <input className="signUpInput" type="email" placeholder="Email" />
-            <input className="signUpInput" type="password" placeholder="Password" />
-            <button className="signUpSubmitBtn">Create Account</button>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }
