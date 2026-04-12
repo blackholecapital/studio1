@@ -26,6 +26,8 @@ const extraWallpapers: WallpaperItem[] = [
 
 export const wallpaperCatalog: WallpaperItem[] = [...sequentialWallpapers, ...extraWallpapers];
 
-/** Default wallpaper */
-export const DEFAULT_WALLPAPER_CODE = "w813";
-export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w813.png`;
+/** Default wallpaper — the landing wireframe wallpaper shown on page
+ *  land and on reset. The ghost demo flow flips this to w813 during
+ *  its animation. */
+export const DEFAULT_WALLPAPER_CODE = "w9";
+export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w9.png`;

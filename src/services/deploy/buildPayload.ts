@@ -104,7 +104,7 @@ export function buildDesktopPagePayload(
   // p4 (Exclusive): only emit wallpaperCode unless user has placed non-default content
   if (pageKey === "p4") {
     const hasUserContent = pageData.cards.some(
-      (c) => (c.contentCode && c.contentCode !== "c813") || c.skinId || c.isExclusive,
+      (c) => (c.contentCode && c.contentCode !== "c77" && c.contentCode !== "c813") || c.skinId || c.isExclusive,
     );
     const activeTiles = serializeExclusiveTiles(ctx.exclusiveTiles);
     const payload: Record<string, unknown> = {
@@ -113,7 +113,7 @@ export function buildDesktopPagePayload(
     };
     if (hasUserContent) {
       payload.cards = pageData.cards
-        .filter((c) => (c.contentCode && c.contentCode !== "c813") || c.skinId || c.isExclusive)
+        .filter((c) => (c.contentCode && c.contentCode !== "c77" && c.contentCode !== "c813") || c.skinId || c.isExclusive)
         .map((card) => ({
           id: card.id,
           ...scaleDesktop(card, ctx.scaleParams, ctx.wsHeight),
