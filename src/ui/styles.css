@@ -494,18 +494,33 @@ button {
 .leftRailPageCategoryList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 12px;
-  padding: 8px 4px 4px;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 10px 2px 4px;
   border-top: 1px solid rgba(140, 210, 255, 0.18);
 }
 
 .leftRailPageCategoryRow {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: rgba(210, 235, 255, 0.78);
-  padding: 4px 6px;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(220, 240, 255, 0.92);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.leftRailPageCategoryRow:hover {
+  background: rgba(140, 210, 255, 0.10);
+  border-color: rgba(140, 210, 255, 0.28);
+  color: #ffffff;
 }
 
 .leftRailTabBtnHalf {
@@ -3514,4 +3529,121 @@ button {
   font-size: 0.72rem;
   color: #cfe9ff;
   word-break: break-all;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Package info modal (Biz Pages / AD Pages / Web-3 Pages)
+   Mounted at the app root so it is never clipped by the left rail.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.packageInfoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 18, 0.62);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.packageInfoCard {
+  position: relative;
+  width: 440px;
+  max-width: 92vw;
+  padding: 32px 34px 28px;
+  border-radius: 22px;
+  background: rgba(10, 16, 30, 0.92);
+  border: 1px solid rgba(100, 200, 255, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 0 1px rgba(80, 185, 255, 0.22),
+    0 0 60px rgba(80, 185, 255, 0.20),
+    0 28px 56px rgba(0, 0, 0, 0.5);
+  color: #e8f2ff;
+}
+
+.packageInfoClose {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(210, 235, 255, 0.72);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.packageInfoClose:hover {
+  background: rgba(140, 210, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.packageInfoTitle {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #d8ecff;
+  margin: 0 0 4px;
+}
+
+.packageInfoSubtitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(190, 220, 255, 0.58);
+  margin: 0 0 14px;
+}
+
+.packageInfoList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.packageInfoBullet {
+  position: relative;
+  padding: 7px 12px 7px 30px;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: rgba(225, 240, 255, 0.92);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 10px;
+  border: 1px solid rgba(140, 210, 255, 0.18);
+}
+
+.packageInfoBullet::before {
+  content: "✓";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8bffc0;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.packageInfoFooter {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(80, 200, 140, 0.12), rgba(60, 160, 120, 0.18));
+  border: 1px solid rgba(100, 220, 160, 0.4);
+  color: #b8ffcb;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
 }

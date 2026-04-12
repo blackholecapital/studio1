@@ -29,6 +29,7 @@ import { WallpaperRail } from "./desktop/panels/WallpaperRail";
 import { DesktopWorkspace } from "./desktop/sections/DesktopWorkspace";
 import { ContentRail } from "./desktop/panels/ContentRail";
 import { AuthModal } from "./modals/AuthModal";
+import { PackageInfoModal, type PackageKey } from "./modals/PackageInfoModal";
 import { useAuthSession } from "./hooks/useAuthSession";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
@@ -123,6 +124,7 @@ export function App() {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
   }, []);
+  const [packageInfo, setPackageInfo] = useState<PackageKey | null>(null);
   const [deployModal, setDeployModal] = useState<{ slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null>(null);
   const [wallpaperPreview, setWallpaperPreview] = useState<string | null>(null);
   const [topAdDropLabel, setTopAdDropLabel] = useState("Ad Slot");
@@ -918,6 +920,7 @@ export function App() {
           onOpenJoin={() => openAuthModal("signup")}
           onOpenLogin={() => openAuthModal("login")}
           onOpenForgot={() => openAuthModal("forgot")}
+          onOpenPackageInfo={(key) => setPackageInfo(key)}
         />
       )}
       workspace={(
@@ -980,6 +983,9 @@ export function App() {
         onResetPassword={(input) => auth.resetPassword(input)}
         onLogout={async () => { await auth.logout(); }}
       />
+
+      {/* ══ PACKAGE INFO MODAL (Biz Pages / AD Pages / Web-3 Pages) ══ */}
+      <PackageInfoModal open={packageInfo} onClose={() => setPackageInfo(null)} />
 
       {/* ══ DEPLOY MODAL ══ */}
       {deployModal && (() => {
