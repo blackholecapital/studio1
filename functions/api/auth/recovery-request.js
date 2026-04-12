@@ -56,7 +56,7 @@ async function findUserByIdentifier(bucket, identifier) {
 }
 
 async function handleRecoveryRequest({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   let body;
   try {
@@ -68,7 +68,7 @@ async function handleRecoveryRequest({ request, env }) {
   const identifier = String(body?.identifier ?? "").trim();
   if (!identifier) return Errors.BAD_REQUEST("Missing identifier (username or recovery email)");
 
-  const user = await findUserByIdentifier(env.MEDIA_ASSETS_BUCKET, identifier);
+  const user = await findUserByIdentifier(env.MEDIA_ASSETS, identifier);
 
   // Whether or not a matching account was found, respond as if we issued
   // a token so we don't leak which accounts exist. When the account does
@@ -83,7 +83,7 @@ async function handleRecoveryRequest({ request, env }) {
   }
 
   const recovery = makeRecovery(user);
-  await saveRecovery(env.MEDIA_ASSETS_BUCKET, recovery);
+  await saveRecovery(env.MEDIA_ASSETS, recovery);
 
   return json({
     ok: true,

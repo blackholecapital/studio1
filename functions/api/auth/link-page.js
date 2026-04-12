@@ -28,15 +28,15 @@ function withCors(res, request, env) {
  *   2. Appends slug to user.page_ids (deduped)
  */
 async function handleLinkPage({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   const token = bearerToken(request);
   if (!token) return Errors.UNAUTHORIZED("Missing bearer token");
 
-  const session = await loadSession(env.MEDIA_ASSETS_BUCKET, token);
+  const session = await loadSession(env.MEDIA_ASSETS, token);
   if (!session) return Errors.UNAUTHORIZED("Session not found");
   if (isExpired(session)) {
-    await deleteSession(env.MEDIA_ASSETS_BUCKET, token);
+    await deleteSession(env.MEDIA_ASSETS, token);
     return Errors.UNAUTHORIZED("Session expired");
   }
 
@@ -50,10 +50,10 @@ async function handleLinkPage({ request, env }) {
   const pageSlug = sanitizeSlug(body?.pageSlug);
   if (!pageSlug) return Errors.BAD_REQUEST("Missing or invalid pageSlug");
 
-  const user = await loadUser(env.MEDIA_ASSETS_BUCKET, session.username);
+  const user = await loadUser(env.MEDIA_ASSETS, session.username);
   if (!user) return Errors.UNAUTHORIZED("User not found");
 
-  await savePageOwnership(env.MEDIA_ASSETS_BUCKET, {
+  await savePageOwnership(env.MEDIA_ASSETS, {
     slug: pageSlug,
     user_id: user.user_id,
     username: user.username,
@@ -63,7 +63,7 @@ async function handleLinkPage({ request, env }) {
   const pageIds = Array.isArray(user.page_ids) ? user.page_ids.slice() : [];
   if (!pageIds.includes(pageSlug)) pageIds.push(pageSlug);
   user.page_ids = pageIds;
-  await saveUser(env.MEDIA_ASSETS_BUCKET, user);
+  await saveUser(env.MEDIA_ASSETS, user);
 
   return json({ ok: true, pageSlug, user: publicUser(user) });
 }

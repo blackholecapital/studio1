@@ -46,7 +46,7 @@ async function expireUserSessions(bucket, username) {
 }
 
 async function handleRecoveryReset({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   let body;
   try {
@@ -63,26 +63,26 @@ async function handleRecoveryReset({ request, env }) {
   if (!validatePassword(newPassword)) return Errors.BAD_REQUEST("Password must be 8–128 characters");
   if (newPassword !== confirmPassword) return Errors.BAD_REQUEST("Passwords do not match");
 
-  const recovery = await loadRecovery(env.MEDIA_ASSETS_BUCKET, token);
+  const recovery = await loadRecovery(env.MEDIA_ASSETS, token);
   if (!recovery) return Errors.UNAUTHORIZED("Recovery token not found");
   if (recovery.used) return Errors.UNAUTHORIZED("Recovery token already used");
   if (isExpired(recovery)) return Errors.UNAUTHORIZED("Recovery token expired");
 
-  const user = await loadUser(env.MEDIA_ASSETS_BUCKET, recovery.username);
+  const user = await loadUser(env.MEDIA_ASSETS, recovery.username);
   if (!user) return Errors.UNAUTHORIZED("User not found");
 
   const { hash, salt } = await hashPassword(newPassword);
   user.password_hash = hash;
   user.salt = salt;
   user.password_updated_at = Date.now();
-  await saveUser(env.MEDIA_ASSETS_BUCKET, user);
+  await saveUser(env.MEDIA_ASSETS, user);
 
   recovery.used = true;
   recovery.used_at = Date.now();
-  await saveRecovery(env.MEDIA_ASSETS_BUCKET, recovery);
+  await saveRecovery(env.MEDIA_ASSETS, recovery);
 
   // Best-effort: drop any active sessions so the old password really is dead.
-  await expireUserSessions(env.MEDIA_ASSETS_BUCKET, user.username);
+  await expireUserSessions(env.MEDIA_ASSETS, user.username);
 
   return json({ ok: true, username: user.username });
 }

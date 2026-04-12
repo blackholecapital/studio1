@@ -20,7 +20,7 @@ function withCors(res, request, env) {
 }
 
 async function handleSignup({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   let body;
   try {
@@ -40,7 +40,7 @@ async function handleSignup({ request, env }) {
   if (!validatePassword(password)) return Errors.BAD_REQUEST("Password must be 8–128 characters");
   if (password !== confirm) return Errors.BAD_REQUEST("Passwords do not match");
 
-  const existing = await loadUser(env.MEDIA_ASSETS_BUCKET, username);
+  const existing = await loadUser(env.MEDIA_ASSETS, username);
   if (existing) return Errors.BAD_REQUEST("Username is already taken");
 
   const { hash, salt } = await hashPassword(password);
@@ -57,10 +57,10 @@ async function handleSignup({ request, env }) {
     page_ids: [],
   };
 
-  await saveUser(env.MEDIA_ASSETS_BUCKET, user);
+  await saveUser(env.MEDIA_ASSETS, user);
 
   const session = makeSession(user);
-  await saveSession(env.MEDIA_ASSETS_BUCKET, session);
+  await saveSession(env.MEDIA_ASSETS, session);
 
   return json({ ok: true, session, user: publicUser(user) });
 }

@@ -4,7 +4,7 @@
  * Password hashing:   PBKDF2-SHA256, 100k iterations, 16-byte salt.
  * Tokens (session / recovery): 32 random bytes, hex-encoded.
  *
- * R2 layout (all inside the MEDIA_ASSETS_BUCKET binding):
+ * R2 layout (all inside the MEDIA_ASSETS binding):
  *   data/users/<username>.json
  *   data/sessions/<token>.json
  *   data/recovery/<token>.json

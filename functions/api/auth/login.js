@@ -16,7 +16,7 @@ function withCors(res, request, env) {
 }
 
 async function handleLogin({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   let body;
   try {
@@ -31,7 +31,7 @@ async function handleLogin({ request, env }) {
     return Errors.UNAUTHORIZED("Invalid username or password");
   }
 
-  const user = await loadUser(env.MEDIA_ASSETS_BUCKET, username);
+  const user = await loadUser(env.MEDIA_ASSETS, username);
   if (!user || user.status && user.status !== "active") {
     return Errors.UNAUTHORIZED("Invalid username or password");
   }
@@ -40,7 +40,7 @@ async function handleLogin({ request, env }) {
   if (!ok) return Errors.UNAUTHORIZED("Invalid username or password");
 
   const session = makeSession(user);
-  await saveSession(env.MEDIA_ASSETS_BUCKET, session);
+  await saveSession(env.MEDIA_ASSETS, session);
 
   return json({ ok: true, session, user: publicUser(user) });
 }

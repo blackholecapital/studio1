@@ -25,19 +25,19 @@ function withCors(res, request, env) {
  * Cross-origin is allowed via corsAuthHeaders (origin must be allow-listed).
  */
 async function handleSession({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
 
   const token = bearerToken(request);
   if (!token) return Errors.UNAUTHORIZED("Missing bearer token");
 
-  const session = await loadSession(env.MEDIA_ASSETS_BUCKET, token);
+  const session = await loadSession(env.MEDIA_ASSETS, token);
   if (!session) return Errors.UNAUTHORIZED("Session not found");
   if (isExpired(session)) {
-    await deleteSession(env.MEDIA_ASSETS_BUCKET, token);
+    await deleteSession(env.MEDIA_ASSETS, token);
     return Errors.UNAUTHORIZED("Session expired");
   }
 
-  const user = await loadUser(env.MEDIA_ASSETS_BUCKET, session.username);
+  const user = await loadUser(env.MEDIA_ASSETS, session.username);
   if (!user) return Errors.UNAUTHORIZED("User not found");
 
   return json({ ok: true, session, user: publicUser(user) });

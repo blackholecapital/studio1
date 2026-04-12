@@ -9,10 +9,10 @@ function withCors(res, request, env) {
 }
 
 async function handleLogout({ request, env }) {
-  if (!env?.MEDIA_ASSETS_BUCKET) return Errors.MISSING_BINDING("MEDIA_ASSETS_BUCKET");
+  if (!env?.MEDIA_ASSETS) return Errors.MISSING_BINDING("MEDIA_ASSETS");
   const token = bearerToken(request);
   if (token) {
-    try { await deleteSession(env.MEDIA_ASSETS_BUCKET, token); } catch { /* best-effort */ }
+    try { await deleteSession(env.MEDIA_ASSETS, token); } catch { /* best-effort */ }
   }
   return json({ ok: true });
 }
