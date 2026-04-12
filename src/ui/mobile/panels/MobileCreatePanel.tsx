@@ -41,7 +41,7 @@ export function MobileCreatePanel(props: {
                 onClick={() => { if (!props.cardState.lockPage) { props.setWallpaper(item.url); props.setCreatePanel(null); } }}
                 title={item.code}
               >
-                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false}
+                <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} loading="lazy" decoding="async"
                   onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
               </button>
             ))}

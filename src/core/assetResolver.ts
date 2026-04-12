@@ -5,26 +5,21 @@
 export const MEDIA_BASE = "https://media.xyz-labs.xyz";
 
 /**
- * Session cache-buster: changes on each page load so the browser
- * re-checks R2 for newly-added wallpapers instead of serving cached 404s.
- */
-const SESSION_CB = `_v=${Date.now()}`;
-
-/**
- * Build a Cloudflare Image Transform thumbnail URL for sidebar/picker panels.
- * Wraps media.xyz-labs.xyz paths with CF transform (120×90 cover).
- * Includes a session cache-buster so newly-added wallpapers appear on refresh.
- * Falls through unchanged for any other URL.
+ * Build a thumbnail URL for sidebar/picker panels.
+ *
+ * Returns the canonical media URL *unchanged*. It used to append a
+ * per-session `?_v=<Date.now()>` cache-buster so newly-added wallpapers
+ * would appear on refresh, but that had a catastrophic side-effect:
+ * every page load produced unique query strings, which defeated both
+ * the browser cache AND the Cloudflare edge cache, forcing every
+ * wallpaper/content thumbnail to origin-pull from R2 on every visit.
+ * Since the catalog is code-generated (a new image requires a deploy
+ * anyway), we let the CDN and the browser cache the canonical URL.
+ *
+ * CSS handles visual sizing via object-fit: cover.
  */
 export function thumbnailUrl(fullUrl: string): string {
-  if (!fullUrl) return "";
-  // Return the raw URL with cache-buster; CSS handles sizing via object-fit:cover.
-  // Cloudflare Image Transform (cdn-cgi/image) is not reliably available on all domains,
-  // so we skip the transform and serve the full-res image directly.
-  if (fullUrl.startsWith(MEDIA_BASE + "/")) {
-    return `${fullUrl}?${SESSION_CB}`;
-  }
-  return fullUrl;
+  return fullUrl ?? "";
 }
 
 /**
