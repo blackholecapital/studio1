@@ -40,6 +40,20 @@ export function corsWriteHeaders(request, env) {
   return headers;
 }
 
+/** Build CORS headers for auth endpoints (allow Authorization header). */
+export function corsAuthHeaders(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  const headers = {};
+  if (isAllowedWriteOrigin(origin, env)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+    headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+    headers["Access-Control-Max-Age"] = "86400";
+    headers["Vary"] = "Origin";
+  }
+  return headers;
+}
+
 /** Build CORS headers for read endpoints (media, content). */
 export function corsReadHeaders() {
   return {

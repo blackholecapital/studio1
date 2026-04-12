@@ -28,6 +28,8 @@ import { DesktopTopBar } from "./desktop/sections/DesktopTopBar";
 import { WallpaperRail } from "./desktop/panels/WallpaperRail";
 import { DesktopWorkspace } from "./desktop/sections/DesktopWorkspace";
 import { ContentRail } from "./desktop/panels/ContentRail";
+import { AuthModal } from "./modals/AuthModal";
+import { useAuthSession } from "./hooks/useAuthSession";
 
 type SurfaceTab = "cards" | "content" | "wallpaper" | "media" | "skins" | "exclusive";
 type LeftRailTab = "wallpaper" | "pages";
@@ -112,6 +114,15 @@ export function App() {
   const [isSaved, setIsSaved] = useState(false);
   const [isGlobalWallpaper, setIsGlobalWallpaper] = useState(false);
   const [tileShapeMode, setTileShapeMode] = useState<"sharp" | "rounded" | "circle">("rounded");
+
+  // Auth session (shared across Studio + Gateway via /api/auth/session).
+  const auth = useAuthSession();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup" | "forgot" | "reset">("login");
+  const openAuthModal = useCallback((mode: "login" | "signup" | "forgot" | "reset") => {
+    setAuthModalMode(mode);
+    setAuthModalOpen(true);
+  }, []);
   const [deployModal, setDeployModal] = useState<{ slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null>(null);
   const [wallpaperPreview, setWallpaperPreview] = useState<string | null>(null);
   const [topAdDropLabel, setTopAdDropLabel] = useState("Ad Slot");
@@ -896,7 +907,18 @@ export function App() {
           unlockAllPages={unlockAllPages}
           resetWorkspace={resetWorkspace}
           isSaved={isSaved}
-          onSave={handleSave}
+          onSave={() => {
+            handleSave();
+            // Associate the saved page with the logged-in user, if any.
+            if (auth.isAuthenticated && slug) {
+              void auth.linkPage(slug);
+            }
+          }}
+          currentUser={auth.user}
+          onOpenJoin={() => openAuthModal("signup")}
+          onOpenLogin={() => openAuthModal("login")}
+          onOpenForgot={() => openAuthModal("forgot")}
+          onLoginSubmit={async (input) => { await auth.login(input); }}
         />
       )}
       workspace={(
@@ -944,6 +966,21 @@ export function App() {
         />
       )}
     >
+
+      {/* ══ AUTH MODAL ══
+          Mounted at the app root so it is NOT clipped by the left rail's
+          overflow: hidden. This is the "Join modal bug" fix. */}
+      <AuthModal
+        open={authModalOpen}
+        initialMode={authModalMode}
+        currentUser={auth.user}
+        onClose={() => setAuthModalOpen(false)}
+        onSignup={(input) => auth.signup(input)}
+        onLogin={(input) => auth.login(input)}
+        onRequestRecovery={(identifier) => auth.requestRecovery(identifier)}
+        onResetPassword={(input) => auth.resetPassword(input)}
+        onLogout={async () => { await auth.logout(); }}
+      />
 
       {/* ══ DEPLOY MODAL ══ */}
       {deployModal && (() => {
