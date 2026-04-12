@@ -155,12 +155,22 @@ export function App() {
   useEffect(() => {
     if (ghostStep === null || ghostStep === 0) return;
 
-    // Step 1: wallpaper selection — switch to w33 after 2.5s, advance at 3.5s
+    // Step 1: landing — start with w9 wallpaper + c77 center tile, switch
+    // wallpaper to w813 at 4s, advance at 4.5s.
     if (ghostStep === 1) {
+      setWallpaper("https://media.xyz-labs.xyz/wallpaper/w9.png");
+      setCardState((curr) => ({
+        ...curr,
+        cards: curr.cards.map((c) =>
+          c.contentCode === "c813"
+            ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c77.png", contentCode: "c77" }
+            : c
+        )
+      }));
       const wallpaperTimer = setTimeout(() => {
-        setWallpaper("https://media.xyz-labs.xyz/wallpaper/w33.png");
-      }, 2500);
-      ghostTimerRef.current = setTimeout(() => setGhostStep(2), 3500);
+        setWallpaper("https://media.xyz-labs.xyz/wallpaper/w813.png");
+      }, 4000);
+      ghostTimerRef.current = setTimeout(() => setGhostStep(2), 4500);
       return () => { clearTimeout(wallpaperTimer); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
@@ -174,14 +184,14 @@ export function App() {
       return () => { clearTimeout(toPages); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
-    // Step 3 (3s): drag content — apply c4444 to center tile on completion
+    // Step 3 (3s): drag content — finger drags c813 onto the c77 center tile
     if (ghostStep === 3) {
       ghostTimerRef.current = setTimeout(() => {
         setCardState((curr) => ({
           ...curr,
           cards: curr.cards.map((c) =>
-            c.contentCode === "c813"
-              ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c4444.png", contentCode: "c4444" }
+            c.contentCode === "c77"
+              ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c813.png", contentCode: "c813" }
               : c
           )
         }));
@@ -1033,7 +1043,7 @@ export function App() {
                 <div className="ghostLabelSub">Drop images onto your cards</div>
               </div>
               <div className="ghostDragComposite">
-                <img className="ghostTileImg" src="https://media.xyz-labs.xyz/content/c4444.png" alt="" draggable={false} />
+                <img className="ghostTileImg" src="https://media.xyz-labs.xyz/content/c813.png" alt="" draggable={false} />
                 <svg className="ghostFingerSvg ghostFingerDrag" viewBox="0 0 24 24" width="32" height="32" fill="none"><path d="M12 1a3 3 0 0 0-3 3v7.27l-1.54-1.55a2.1 2.1 0 0 0-2.97 2.97l5.22 5.22A5 5 0 0 0 13.24 20H16a5 5 0 0 0 5-5v-4a3 3 0 0 0-3-3h-.5a2.5 2.5 0 0 0-2.5 2v-.5A2.5 2.5 0 0 0 12.5 7H12V4a3 3 0 0 0-3-3h3z" fill="rgba(255,255,255,0.92)" stroke="rgba(0,0,0,0.25)" strokeWidth="0.5"/></svg>
               </div>
             </>
