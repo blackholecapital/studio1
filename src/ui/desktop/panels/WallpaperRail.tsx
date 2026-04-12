@@ -41,6 +41,7 @@ export function WallpaperRail(props: {
   onOpenJoin: () => void;
   onOpenLogin: () => void;
   onOpenForgot: () => void;
+  onOpenPackageInfo: (key: "biz" | "ad" | "web3") => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
 
@@ -205,22 +206,13 @@ export function WallpaperRail(props: {
               <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
 
-            {/* Three page-category rows under the Profile row */}
+            {/* Three page-category rows under the Profile row.
+                Each opens a package-info popup mounted at the app overlay. */}
             <div className="leftRailPageCategoryList">
-              <div className="leftRailPageCategoryRow">1. Biz Pages</div>
-              <div className="leftRailPageCategoryRow">2. AD Pages</div>
-              <div className="leftRailPageCategoryRow">3. Web-3 Pages</div>
+              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("biz")}>Biz Pages</button>
+              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("ad")}>AD Pages</button>
+              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("web3")}>Web-3 Pages</button>
             </div>
-          </div>
-
-          {/* Forgot Password launcher — opens the overlay AuthModal (no longer trapped inside this tile) */}
-          <div className="forgotPwWrap">
-            {props.tooltipOpen === "all" && (
-              <div className="forgotPwCard">
-                <div className="forgotPwTitle">Forgot Password</div>
-                <button className="forgotPwSubmit" onClick={props.onOpenForgot}>Recover account</button>
-              </div>
-            )}
           </div>
 
           <div className="gatewayInfoCard gatewayInfoCardBottom">
