@@ -19,6 +19,7 @@ const sequentialWallpapers: WallpaperItem[] = Array.from({ length: SEQUENTIAL_CO
 
 // Additional wallpapers with non-sequential codes
 const extraWallpapers: WallpaperItem[] = [
+  { code: "w813",   url: `${WALLPAPER_BASE}/w813.png` },
   { code: "w1234",  url: `${WALLPAPER_BASE}/w1234.png` },
   { code: "w12345", url: `${WALLPAPER_BASE}/w12345.png` },
 ];
@@ -26,5 +27,5 @@ const extraWallpapers: WallpaperItem[] = [
 export const wallpaperCatalog: WallpaperItem[] = [...sequentialWallpapers, ...extraWallpapers];
 
 /** Default wallpaper */
-export const DEFAULT_WALLPAPER_CODE = "w1234";
-export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w1234.png`;
+export const DEFAULT_WALLPAPER_CODE = "w813";
+export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w813.png`;
