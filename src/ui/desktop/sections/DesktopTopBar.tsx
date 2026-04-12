@@ -16,6 +16,8 @@ export function DesktopTopBar(props: {
   deploying: boolean;
   tooltipOpen: string | null;
   setTooltipOpen: (value: string | null) => void;
+  tileShapeMode: "sharp" | "rounded" | "circle";
+  setTileShapeMode: (mode: "sharp" | "rounded" | "circle") => void;
 }) {
   return (
     <header className="topStrip glassPanel">
@@ -47,6 +49,8 @@ export function DesktopTopBar(props: {
       <DesktopDeployControls
         onDeploy={props.onDeploy}
         deploying={props.deploying}
+        tileShapeMode={props.tileShapeMode}
+        setTileShapeMode={props.setTileShapeMode}
       />
     </header>
   );

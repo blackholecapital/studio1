@@ -111,6 +111,7 @@ export function App() {
   const [deployStatus, setDeployStatus] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isGlobalWallpaper, setIsGlobalWallpaper] = useState(false);
+  const [tileShapeMode, setTileShapeMode] = useState<"sharp" | "rounded" | "circle">("rounded");
   const [deployModal, setDeployModal] = useState<{ slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null>(null);
   const [wallpaperPreview, setWallpaperPreview] = useState<string | null>(null);
   const [topAdDropLabel, setTopAdDropLabel] = useState("Ad Slot");
@@ -857,6 +858,8 @@ export function App() {
           deploying={deploying}
           tooltipOpen={tooltipOpen}
           setTooltipOpen={setTooltipOpen}
+          tileShapeMode={tileShapeMode}
+          setTileShapeMode={setTileShapeMode}
         />
       )}
       leftRail={(
@@ -902,6 +905,7 @@ export function App() {
           handleCardDrop={handleCardDrop}
           handleCardDragOver={handleCardDragOver}
           handleResizePointerDown={handleResizePointerDown}
+          tileShapeMode={tileShapeMode}
         />
       )}
       rightRail={(

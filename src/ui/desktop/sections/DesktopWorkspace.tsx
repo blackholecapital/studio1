@@ -16,7 +16,9 @@ export function DesktopWorkspace(props: {
   handleCardDrop: (e: DragEvent, cardId: string) => void;
   handleCardDragOver: (e: DragEvent) => void;
   handleResizePointerDown: (e: PointerEvent, cardId: string) => void;
+  tileShapeMode: "sharp" | "rounded" | "circle";
 }) {
+  const shapeClass = `shape-${props.tileShapeMode}`;
   return (
     <section className="workspaceShell" ref={props.workspaceRef as RefObject<HTMLDivElement>}>
       <div className="workspaceTint" />
@@ -72,7 +74,7 @@ export function DesktopWorkspace(props: {
         return (
           <button
             key={card.id}
-            className={`floatingCard ${isSelected ? "isSelected" : ""} ${card.lockPosition ? "isPositionLocked" : ""} ${isOverlapping ? "isOverlapping" : ""} ${props.cardState.lockPage ? "isPageLocked" : ""}`}
+            className={`floatingCard ${shapeClass} ${isSelected ? "isSelected" : ""} ${card.lockPosition ? "isPositionLocked" : ""} ${isOverlapping ? "isOverlapping" : ""} ${props.cardState.lockPage ? "isPageLocked" : ""}`}
             style={{ left: card.x, top: card.y, width: card.w, height: card.h, zIndex: card.zIndex ?? 1 }}
             onPointerDown={(e) => {
               if (props.cardState.lockPage) return;

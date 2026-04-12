@@ -101,25 +101,34 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-  /* brandMark + cubes sit over left rail area */
+  /* cubes sit over left rail area; brandMark is absolutely positioned
+     so it can be centered over the left tool tile independently. */
   flex-shrink: 0;
+  /* Reserve the sidebar width so the absolutely-positioned brandMark
+     doesn't visually collide with the cube buttons to its right. */
+  padding-left: calc(var(--layout-sidebar-width) - 18px);
 }
 
 .topStripLeft .cubeButtonsHeader {
-  /* Nudge cube layout buttons ~30% closer to the center page title */
+  /* Offset cubes ~30% toward the center HOME text, just past the left rail edge */
   margin-left: 80px;
 }
 
 .brandMark {
+  /* Centered horizontally over the left tool tile (which occupies the
+     first sidebar-width pixels of .topStrip, minus the 18px left padding). */
+  position: absolute;
+  top: 50%;
+  left: calc(var(--layout-sidebar-width) / 2 - 18px);
+  transform: translate(-50%, -50%);
   font-weight: 800;
-  position: relative;
-  left: -6px;
   letter-spacing: 0.06em;
   font-size: 0.8rem;
   white-space: nowrap;
   color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
   transition: color 0.15s;
+  z-index: 1;
 }
 
 .brandMark:hover {
@@ -260,24 +269,43 @@ button {
   transition: color 0.15s;
 }
 
-/* Decorative shapes to the right of the center nav controls */
+/* Tile-shape picker trio (sharp square, rounded square, circle)
+   Rendered inside .topStripRight next to PUBLISH PAGES. */
 .topStripShapes {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: 12px;
+  gap: 10px;
+  margin-right: 4px;
 }
 
 .topStripShape {
-  width: 16px;
-  height: 16px;
-  border: 1px solid rgba(193, 226, 255, 0.45);
-  background: rgba(255, 255, 255, 0.03);
-  display: inline-block;
+  /* 30% larger than previous 16px */
+  width: 21px;
+  height: 21px;
+  border: 1px solid rgba(193, 226, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
-.topStripShapeSquare {
-  border-radius: 3px;
+.topStripShape:hover {
+  border-color: rgba(186, 229, 255, 0.9);
+  background: rgba(140, 210, 255, 0.12);
+}
+
+.topStripShape.isActive {
+  border-color: rgba(186, 229, 255, 0.95);
+  background: rgba(140, 210, 255, 0.22);
+  box-shadow: 0 0 10px rgba(140, 210, 255, 0.35);
+}
+
+.topStripShapeSquareSharp {
+  border-radius: 0;
+}
+
+.topStripShapeSquareRounded {
+  border-radius: 5px;
 }
 
 .topStripShapeCircle {
@@ -1549,6 +1577,7 @@ button {
   border-radius: 28px;
   border: 1px solid rgba(45, 205, 110, 0.40);
   background: rgba(0, 0, 0, 0.11);
+  transition: border-radius 0.2s;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
   box-shadow:
@@ -1589,6 +1618,19 @@ button {
   box-shadow:
     inset 0 0 40px rgba(255, 40, 40, 0.15),
     0 0 0 2px rgba(255, 60, 60, 0.25);
+}
+
+/* Tile-shape modes driven by the top bar shape picker */
+.floatingCard.shape-sharp {
+  border-radius: 0;
+}
+
+.floatingCard.shape-rounded {
+  border-radius: 28px;
+}
+
+.floatingCard.shape-circle {
+  border-radius: 50%;
 }
 
 .cardInstructions {
