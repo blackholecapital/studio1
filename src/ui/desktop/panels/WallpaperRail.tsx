@@ -96,7 +96,7 @@ export function WallpaperRail(props: {
 
             {/* Row: Sign Up | Reset */}
             <div className="leftRailActionRow">
-              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Sign Up</button>
+              <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={() => setSignUpOpen(true)}>Join</button>
               <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
             </div>
 
