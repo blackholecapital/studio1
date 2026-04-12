@@ -82,8 +82,10 @@ button {
   border-radius: 16px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px 18px;
   gap: 0;
+  position: relative;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
@@ -99,20 +101,34 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-  /* brandMark + cubes sit over left rail area */
+  /* cubes sit over left rail area; brandMark is absolutely positioned
+     so it can be centered over the left tool tile independently. */
   flex-shrink: 0;
+  /* Reserve the sidebar width so the absolutely-positioned brandMark
+     doesn't visually collide with the cube buttons to its right. */
+  padding-left: calc(var(--layout-sidebar-width) - 18px);
+}
+
+.topStripLeft .cubeButtonsHeader {
+  /* Offset cubes ~30% toward the center HOME text, just past the left rail edge */
+  margin-left: 80px;
 }
 
 .brandMark {
+  /* Centered horizontally over the left tool tile (which occupies the
+     first sidebar-width pixels of .topStrip, minus the 18px left padding). */
+  position: absolute;
+  top: 50%;
+  left: calc(var(--layout-sidebar-width) / 2 - 18px);
+  transform: translate(-50%, -50%);
   font-weight: 800;
-  position: relative;
-  left: -6px;
   letter-spacing: 0.06em;
   font-size: 0.8rem;
   white-space: nowrap;
   color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
   transition: color 0.15s;
+  z-index: 1;
 }
 
 .brandMark:hover {
@@ -225,11 +241,17 @@ button {
 }
 
 .topStripCenter {
-  flex: 1;
+  /* Anchored to the true horizontal midpoint of .topStrip so the
+     center controls never drift when the left/right groups change width. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
+  pointer-events: auto;
 }
 
 .topStripTitle {
@@ -245,6 +267,51 @@ button {
   text-align: center;
   cursor: pointer;
   transition: color 0.15s;
+}
+
+/* Tile-shape picker trio (sharp square, rounded square, circle)
+   Rendered inside .topStripRight next to PUBLISH PAGES. */
+.topStripShapes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Push shapes ~30% toward the center HOME controls (away from PUBLISH PAGES) */
+  margin-right: 94px;
+}
+
+.topStripShape {
+  /* 25px = 21px × 1.2 (20% larger than the previous size) */
+  width: 25px;
+  height: 25px;
+  /* 20% thicker outline than the previous 1px */
+  border: 1.2px solid rgba(193, 226, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.topStripShape:hover {
+  border-color: rgba(186, 229, 255, 0.9);
+  background: rgba(140, 210, 255, 0.12);
+}
+
+.topStripShape.isActive {
+  border-color: rgba(186, 229, 255, 0.95);
+  background: rgba(140, 210, 255, 0.22);
+  box-shadow: 0 0 10px rgba(140, 210, 255, 0.35);
+}
+
+.topStripShapeSquareSharp {
+  border-radius: 0;
+}
+
+.topStripShapeSquareRounded {
+  border-radius: 5px;
+}
+
+.topStripShapeCircle {
+  border-radius: 50%;
 }
 
 .topStripTitle:hover {
@@ -887,7 +954,7 @@ button {
 /* ── Gateway info card (XYZ Labs sticker) ──────────────────────────────── */
 .gatewayInfoCard {
   flex-shrink: 0;
-  height: 168px;
+  height: 134px;
   padding: 0;
   background: transparent;
   border: none;
@@ -1408,14 +1475,22 @@ button {
   animation: cardContentDropIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Default landing image (c5555) — transparent so wallpaper shows through */
+/* Default landing image (c813) — 50% transparent so wallpaper shows through.
+   Uses its own drop-in keyframe so fill-mode: both doesn't clobber the
+   final opacity back to 1. */
 .cardContentImage.isDefaultImage {
   opacity: 0.5;
+  animation: cardContentDropInDefault 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes cardContentDropIn {
   from { opacity: 0; transform: scale(0.85); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cardContentDropInDefault {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 0.5; transform: scale(1); }
 }
 
 .workspaceShell {
@@ -1512,6 +1587,7 @@ button {
   border-radius: 28px;
   border: 1px solid rgba(45, 205, 110, 0.40);
   background: rgba(0, 0, 0, 0.11);
+  transition: border-radius 0.2s;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
   box-shadow:
@@ -1552,6 +1628,25 @@ button {
   box-shadow:
     inset 0 0 40px rgba(255, 40, 40, 0.15),
     0 0 0 2px rgba(255, 60, 60, 0.25);
+}
+
+/* Empty work-surface tiles get a 15% stronger black tint
+   (alpha 0.11 → 0.26) so the drop target is more visible. */
+.floatingCard.isEmpty {
+  background: rgba(0, 0, 0, 0.26);
+}
+
+/* Tile-shape modes driven by the top bar shape picker */
+.floatingCard.shape-sharp {
+  border-radius: 0;
+}
+
+.floatingCard.shape-rounded {
+  border-radius: 28px;
+}
+
+.floatingCard.shape-circle {
+  border-radius: 50%;
 }
 
 .cardInstructions {
@@ -1737,7 +1832,7 @@ button {
   margin-top: auto;
   margin-bottom: 14px;
   flex-shrink: 0;
-  height: 168px;
+  height: 134px;
   background: transparent;
   border: none;
   border-radius: 18px;
@@ -1747,7 +1842,7 @@ button {
 .rightRailLogoImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
@@ -2720,7 +2815,7 @@ button {
 
 .railHeader {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: 8px;
   flex-shrink: 0;
@@ -2742,8 +2837,9 @@ button {
   cursor: pointer;
   text-align: center;
   transition: color 0.15s;
-  /* Fixed width so layout doesn't shift when label changes (EXCLUSIVE is widest) */
-  width: 120px;
+  /* Span full content width so the label is visually centered over the
+     tabs/rows below (which also span the full content width). */
+  width: 100%;
   flex-shrink: 0;
 }
 

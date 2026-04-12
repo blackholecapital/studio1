@@ -45,7 +45,7 @@ export function WallpaperRail(props: {
             props.setLeftMode(next === "wallpaper" ? "create" : "gateway");
           }}
         >
-          {props.leftRailTab === "wallpaper" ? "WALLPAPER" : "PAGES"}
+          {props.leftRailTab === "wallpaper" ? "WALLPAPER" : "BIZ PAGES"}
         </button>
         {props.tooltipOpen === "all" && (
           <div className="tooltipCard">
