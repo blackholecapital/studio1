@@ -82,8 +82,10 @@ button {
   border-radius: 16px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px 18px;
   gap: 0;
+  position: relative;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
@@ -230,11 +232,17 @@ button {
 }
 
 .topStripCenter {
-  flex: 1;
+  /* Anchored to the true horizontal midpoint of .topStrip so the
+     center controls never drift when the left/right groups change width. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
+  pointer-events: auto;
 }
 
 .topStripTitle {
@@ -250,6 +258,30 @@ button {
   text-align: center;
   cursor: pointer;
   transition: color 0.15s;
+}
+
+/* Decorative shapes to the right of the center nav controls */
+.topStripShapes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.topStripShape {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(193, 226, 255, 0.45);
+  background: rgba(255, 255, 255, 0.03);
+  display: inline-block;
+}
+
+.topStripShapeSquare {
+  border-radius: 3px;
+}
+
+.topStripShapeCircle {
+  border-radius: 50%;
 }
 
 .topStripTitle:hover {
@@ -2725,7 +2757,7 @@ button {
 
 .railHeader {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: 8px;
   flex-shrink: 0;
@@ -2747,8 +2779,9 @@ button {
   cursor: pointer;
   text-align: center;
   transition: color 0.15s;
-  /* Fixed width so layout doesn't shift when label changes (EXCLUSIVE is widest) */
-  width: 120px;
+  /* Span full content width so the label is visually centered over the
+     tabs/rows below (which also span the full content width). */
+  width: 100%;
   flex-shrink: 0;
 }
 

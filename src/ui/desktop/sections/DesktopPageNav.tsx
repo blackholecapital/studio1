@@ -38,6 +38,11 @@ export function DesktopPageNav(props: {
           <path d="M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
         </svg>
       </button>
+      <div className="topStripShapes" aria-hidden="true">
+        <span className="topStripShape topStripShapeSquare" />
+        <span className="topStripShape topStripShapeSquare" />
+        <span className="topStripShape topStripShapeCircle" />
+      </div>
     </div>
   );
 }
