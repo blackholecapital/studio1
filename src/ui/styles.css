@@ -1552,11 +1552,11 @@ button {
   animation: cardContentDropIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* Default landing image (c813) — 50% transparent so wallpaper shows through.
-   Uses its own drop-in keyframe so fill-mode: both doesn't clobber the
-   final opacity back to 1. */
+/* Default landing image (c77 pre-demo, c813 post-demo) — 40% opacity
+   so the wallpaper shows through. Uses its own drop-in keyframe so
+   fill-mode: both doesn't clobber the final opacity back to 1. */
 .cardContentImage.isDefaultImage {
-  opacity: 0.5;
+  opacity: 0.4;
   animation: cardContentDropInDefault 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -1567,7 +1567,7 @@ button {
 
 @keyframes cardContentDropInDefault {
   from { opacity: 0; transform: scale(0.85); }
-  to { opacity: 0.5; transform: scale(1); }
+  to { opacity: 0.4; transform: scale(1); }
 }
 
 .workspaceShell {

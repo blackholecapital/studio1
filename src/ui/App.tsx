@@ -72,8 +72,8 @@ function makeDefaultCard(wsW?: number, wsH?: number): CardModel {
     zIndex: 1,
     lockSize: false,
     lockPosition: false,
-    contentImage: INSTRUCTIONS_IMAGE,
-    contentCode: "c813",
+    contentImage: "https://media.xyz-labs.xyz/content/c77.png",
+    contentCode: "c77",
     contentDisplay: "image"
   };
 }
@@ -157,10 +157,12 @@ export function App() {
     markGhostFlowSeen();
   }, []);
 
-  // Start ghost flow on mount
+  // Start ghost flow on mount — 2 second delay so the landing
+  // wireframe (w9 + c77 centered card) is clearly visible before the
+  // demo kicks in.
   useEffect(() => {
     if (ghostStep !== 0) return;
-    const t = setTimeout(() => setGhostStep(1), 400);
+    const t = setTimeout(() => setGhostStep(1), 2000);
     return () => clearTimeout(t);
   }, [ghostStep]);
 
@@ -168,18 +170,12 @@ export function App() {
   useEffect(() => {
     if (ghostStep === null || ghostStep === 0) return;
 
-    // Step 1: landing — start with w9 wallpaper + c77 center tile, switch
-    // wallpaper to w813 at 4s, advance at 4.5s.
+    // Step 1: landing — the wireframe (w9 wallpaper + c77 center tile)
+    // has already been visible for 2s. Switch wallpaper to w813 at 4s
+    // and advance at 4.5s. The card is already c77 because
+    // makeDefaultCard seeds new pages with c77, so no override needed.
     if (ghostStep === 1) {
       setWallpaper("https://media.xyz-labs.xyz/wallpaper/w9.png");
-      setCardState((curr) => ({
-        ...curr,
-        cards: curr.cards.map((c) =>
-          c.contentCode === "c813"
-            ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c77.png", contentCode: "c77" }
-            : c
-        )
-      }));
       const wallpaperTimer = setTimeout(() => {
         setWallpaper("https://media.xyz-labs.xyz/wallpaper/w813.png");
       }, 4000);
@@ -197,14 +193,25 @@ export function App() {
       return () => { clearTimeout(toPages); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
     }
 
-    // Step 3 (3s): drag content — finger drags c813 onto the c77 center tile
+    // Step 3 (3s): drag content — the finger visibly drags c813 from the
+    // right rail onto the c77 center tile, then drops + locks it. After
+    // the drop the card has contentCode "c813" AND lockSize +
+    // lockPosition set so it cannot be moved or resized.
     if (ghostStep === 3) {
       ghostTimerRef.current = setTimeout(() => {
         setCardState((curr) => ({
           ...curr,
+          lockSize: true,
+          lockPosition: true,
           cards: curr.cards.map((c) =>
             c.contentCode === "c77"
-              ? { ...c, contentImage: "https://media.xyz-labs.xyz/content/c813.png", contentCode: "c813" }
+              ? {
+                  ...c,
+                  contentImage: "https://media.xyz-labs.xyz/content/c813.png",
+                  contentCode: "c813",
+                  lockSize: true,
+                  lockPosition: true,
+                }
               : c
           )
         }));
@@ -298,7 +305,7 @@ export function App() {
     setCardState((curr) => ({
       ...curr,
       cards: curr.cards.map((c) =>
-        c.contentCode === "c813"
+        c.contentCode === "c77" || c.contentCode === "c813"
           ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
           : c
       )
@@ -344,7 +351,7 @@ export function App() {
           const wsW = ws.offsetWidth;
           const wsH = ws.offsetHeight;
           fallback.cardState.cards = fallback.cardState.cards.map((c) =>
-            c.contentCode === "c813"
+            c.contentCode === "c77" || c.contentCode === "c813"
               ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
               : c
           );
@@ -408,7 +415,7 @@ export function App() {
         const wsW = ws.offsetWidth;
         const wsH = ws.offsetHeight;
         fallback.cardState.cards = fallback.cardState.cards.map((c) =>
-          c.contentCode === "c813"
+          c.contentCode === "c77" || c.contentCode === "c813"
             ? { ...c, x: Math.round((wsW - c.w) / 2), y: Math.round((wsH - c.h) / 2) }
             : c
         );
@@ -580,8 +587,8 @@ export function App() {
     const wsW = workspaceRef.current?.offsetWidth  ?? layoutConfig.workspace.width;
     const wsH = workspaceRef.current?.offsetHeight ?? layoutConfig.workspace.height;
     const centeredCard = makeDefaultCard(wsW, wsH);
-    centeredCard.contentImage = INSTRUCTIONS_IMAGE;
-    centeredCard.contentCode = "c813";
+    centeredCard.contentImage = "https://media.xyz-labs.xyz/content/c77.png";
+    centeredCard.contentCode = "c77";
     centeredCard.contentDisplay = "image";
     setCardState({ cards: [centeredCard], selectedCardId: centeredCard.id, lockSize: false, lockPosition: false, lockPage: false });
     setWallpaper(DEFAULT_WALLPAPER);
