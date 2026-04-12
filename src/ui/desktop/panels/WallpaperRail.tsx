@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { thumbnailUrl } from "../../../core/assetResolver";
 import { pageDataToCardState } from "../../../domain/editor/selectors";
@@ -6,6 +7,10 @@ import { makeEmptyPage } from "../../../domain/project/defaults";
 import type { CardInteractionState, ProjectData, PageKey } from "../../../domain/project/types";
 import { LEFT_AD_IMAGE } from "../../../domain/editor/constants";
 import type { AuthUser } from "../../../services/auth/types";
+import { uploadFile } from "../../../services/upload/api";
+import { convertToPng } from "../../../shared/lib/normalize";
+
+type UploadedWallpaper = { code: string; url: string; name: string };
 
 export function WallpaperRail(props: {
   leftRailTab: "wallpaper" | "pages";
@@ -36,25 +41,53 @@ export function WallpaperRail(props: {
   onOpenJoin: () => void;
   onOpenLogin: () => void;
   onOpenForgot: () => void;
-  onLoginSubmit: (input: { username: string; password: string }) => Promise<void>;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
-  const [railLoginUsername, setRailLoginUsername] = useState("");
-  const [railLoginPassword, setRailLoginPassword] = useState("");
-  const [railLoginBusy, setRailLoginBusy] = useState(false);
-  const [railLoginError, setRailLoginError] = useState<string | null>(null);
 
-  async function handleRailLogin() {
-    if (!railLoginUsername || !railLoginPassword) { props.onOpenLogin(); return; }
-    setRailLoginBusy(true);
-    setRailLoginError(null);
+  // Uploaded wallpapers are logged-in-only. Local state keeps them for the
+  // session; on reload the user re-uploads (v1 simplicity).
+  const [uploadedWallpapers, setUploadedWallpapers] = useState<UploadedWallpaper[]>([]);
+  const wallpaperFileInputRef = useRef<HTMLInputElement | null>(null);
+  const wallpaperUploadCounterRef = useRef(0);
+
+  const isLoggedIn = !!props.currentUser;
+
+  async function handleWallpaperFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      window.alert("Wallpaper must be 5MB or less.");
+      e.target.value = "";
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    wallpaperUploadCounterRef.current += 1;
+    const code = `w-usr-${String(wallpaperUploadCounterRef.current).padStart(3, "0")}`;
+    const filename = `${code}.png`;
+
+    // Optimistic: show the local preview immediately AND apply it as the
+    // current wallpaper so the user sees the result before the upload
+    // round-trip completes.
+    setUploadedWallpapers((prev) => [{ code, url: objectUrl, name: file.name }, ...prev]);
+    if (!props.isPageLocked) {
+      props.setWallpaper(objectUrl);
+      props.setWallpaperPreview(null);
+    }
+    e.target.value = "";
+
     try {
-      await props.onLoginSubmit({ username: railLoginUsername.trim(), password: railLoginPassword });
-      setRailLoginPassword("");
-    } catch (e) {
-      setRailLoginError(e instanceof Error ? e.message : "Login failed");
-    } finally {
-      setRailLoginBusy(false);
+      const pngBlob = await convertToPng(file);
+      const uploadSlug = props.currentUser?.username || props.project.slug;
+      const result = await uploadFile(pngBlob, filename, uploadSlug);
+      if (result.ok && result.remoteUrl) {
+        const remote = result.remoteUrl;
+        setUploadedWallpapers((prev) => prev.map((u) => (u.code === code ? { ...u, url: remote } : u)));
+        // Only swap the active wallpaper across to the remote URL if the
+        // user hasn't already picked a different one in the meantime.
+        if (!props.isPageLocked) props.setWallpaper(remote);
+      }
+    } catch {
+      /* Upload failed — the local object URL still works for this session. */
     }
   }
 
@@ -81,6 +114,39 @@ export function WallpaperRail(props: {
       {props.leftMode === "create" && (
         <div className="railScrollRegion">
           <section className="wallpaperTray" aria-label="Wallpaper picker">
+            {/* Logged-in users get an "Add Image" button as the first tile
+                so they can upload their own wallpaper. */}
+            {isLoggedIn && (
+              <>
+                <input
+                  ref={wallpaperFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleWallpaperFileUpload}
+                />
+                <button
+                  type="button"
+                  className="wallpaperThumb wallpaperThumbUpload"
+                  title="Upload wallpaper"
+                  onClick={() => wallpaperFileInputRef.current?.click()}
+                  disabled={props.isPageLocked}
+                >
+                  <span className="wallpaperThumbUploadPlus">+</span>
+                  <span className="wallpaperThumbUploadLabel">Add Image</span>
+                </button>
+              </>
+            )}
+            {uploadedWallpapers.map((item) => (
+              <button
+                key={item.code}
+                className={`wallpaperThumb wallpaperThumbUploaded ${props.wallpaper === item.url ? "isActive" : ""}`}
+                onClick={() => { if (props.isPageLocked) return; props.setWallpaper(item.url); props.setWallpaperPreview(null); }}
+                title={item.name}
+              >
+                <img src={item.url} alt={item.name} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
+              </button>
+            ))}
             {wallpaperCatalog.map((item) => (
               <button
                 key={item.code}
@@ -118,7 +184,7 @@ export function WallpaperRail(props: {
               <button className={`leftRailTabBtn leftRailTabBtnHalf ${props.isSaved ? "isSavedState" : ""}`} onClick={props.onSave}>Save</button>
             </div>
 
-            {/* Row: Join / Sign out | Reset */}
+            {/* Row: Join / Account | Reset */}
             <div className="leftRailActionRow">
               {props.currentUser ? (
                 <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.onOpenLogin} title={`Signed in as ${props.currentUser.username}`}>Account</button>
@@ -128,38 +194,22 @@ export function WallpaperRail(props: {
               <button className="leftRailTabBtn leftRailTabBtnHalf" onClick={props.resetWorkspace}>Reset</button>
             </div>
 
-            {/* Always-open login inputs (quick sign-in from the rail) */}
-            <div className="loginPanel">
-              <input
-                className="loginPillInput"
-                type="text"
-                placeholder={props.currentUser ? props.currentUser.username : "username"}
-                value={props.currentUser ? props.currentUser.username : railLoginUsername}
-                onChange={(e) => setRailLoginUsername(e.target.value)}
-                disabled={!!props.currentUser || railLoginBusy}
-              />
-              <input
-                className="loginPillInput"
-                type="password"
-                placeholder="********************"
-                value={railLoginPassword}
-                onChange={(e) => setRailLoginPassword(e.target.value)}
-                disabled={!!props.currentUser || railLoginBusy}
-                onKeyDown={(e) => { if (e.key === "Enter") handleRailLogin(); }}
-              />
-            </div>
-            {railLoginError && <div className="railLoginError">{railLoginError}</div>}
-
-            {/* Row: Login | ? (below inputs) */}
+            {/* Row: Profile | ? */}
             <div className="leftRailActionRow">
               <button
                 className="leftRailTabBtn leftRailTabBtnHalf"
-                onClick={props.currentUser ? props.onOpenLogin : handleRailLogin}
-                disabled={railLoginBusy}
+                onClick={props.currentUser ? props.onOpenLogin : props.onOpenJoin}
               >
-                {props.currentUser ? "Profile" : (railLoginBusy ? "…" : "Login")}
+                {props.currentUser ? "Profile" : "Login"}
               </button>
               <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
+            </div>
+
+            {/* Three page-category rows under the Profile row */}
+            <div className="leftRailPageCategoryList">
+              <div className="leftRailPageCategoryRow">1. Biz Pages</div>
+              <div className="leftRailPageCategoryRow">2. AD Pages</div>
+              <div className="leftRailPageCategoryRow">3. Web-3 Pages</div>
             </div>
           </div>
 

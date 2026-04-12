@@ -490,6 +490,24 @@ button {
   gap: 6px;
 }
 
+/* Category list under the Profile row in the left rail's Biz Pages tab */
+.leftRailPageCategoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 8px 4px 4px;
+  border-top: 1px solid rgba(140, 210, 255, 0.18);
+}
+
+.leftRailPageCategoryRow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(210, 235, 255, 0.78);
+  padding: 4px 6px;
+}
+
 .leftRailTabBtnHalf {
   flex: 1;
   text-align: center;
@@ -1089,6 +1107,50 @@ button {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* "Add Image" upload tile — occupies the top-left slot when logged in. */
+.wallpaperThumbUpload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: rgba(210, 235, 255, 0.82);
+  background: rgba(140, 210, 255, 0.08);
+  border: 1px dashed rgba(140, 210, 255, 0.45);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+
+.wallpaperThumbUpload:hover:not(:disabled) {
+  background: rgba(140, 210, 255, 0.18);
+  border-color: rgba(186, 229, 255, 0.75);
+}
+
+.wallpaperThumbUpload:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wallpaperThumbUploadPlus {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(220, 240, 255, 0.9);
+}
+
+.wallpaperThumbUploadLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(210, 235, 255, 0.82);
+}
+
+/* User-uploaded wallpaper tile (so we can give it a subtle accent later) */
+.wallpaperThumbUploaded {
+  border-color: rgba(140, 210, 255, 0.32);
 }
 
 /* Content tray – same grid as wallpaper */
