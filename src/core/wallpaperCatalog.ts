@@ -19,6 +19,7 @@ const sequentialWallpapers: WallpaperItem[] = Array.from({ length: SEQUENTIAL_CO
 
 // Additional wallpapers with non-sequential codes
 const extraWallpapers: WallpaperItem[] = [
+  { code: "w1.11",  url: `${WALLPAPER_BASE}/w1.11.png` },
   { code: "w813",   url: `${WALLPAPER_BASE}/w813.png` },
   { code: "w1234",  url: `${WALLPAPER_BASE}/w1234.png` },
   { code: "w12345", url: `${WALLPAPER_BASE}/w12345.png` },
@@ -26,8 +27,8 @@ const extraWallpapers: WallpaperItem[] = [
 
 export const wallpaperCatalog: WallpaperItem[] = [...sequentialWallpapers, ...extraWallpapers];
 
-/** Default wallpaper — the landing wireframe wallpaper shown on page
- *  land and on reset. The ghost demo flow flips this to w813 during
- *  its animation. */
-export const DEFAULT_WALLPAPER_CODE = "w9";
-export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w9.png`;
+/** Default wallpaper — shown on page load and on reset. The ghost demo
+ *  flow starts on w9 and switches to w1.11 during its animation, leaving
+ *  w1.11 as the active wallpaper at the end of the demo. */
+export const DEFAULT_WALLPAPER_CODE = "w1.11";
+export const DEFAULT_WALLPAPER_URL = `${WALLPAPER_BASE}/w1.11.png`;
