@@ -171,13 +171,13 @@ export function App() {
     if (ghostStep === null || ghostStep === 0) return;
 
     // Step 1: landing — the wireframe (w9 wallpaper + c77 center tile)
-    // has already been visible for 2s. Switch wallpaper to w1.11 at 4s
+    // has already been visible for 2s. Switch wallpaper to w1.13 at 4s
     // and advance at 4.5s. The card is already c77 because
     // makeDefaultCard seeds new pages with c77, so no override needed.
     if (ghostStep === 1) {
       setWallpaper("https://media.xyz-labs.xyz/wallpaper/w9.png");
       const wallpaperTimer = setTimeout(() => {
-        setWallpaper("https://media.xyz-labs.xyz/wallpaper/w1.11.png");
+        setWallpaper("https://media.xyz-labs.xyz/wallpaper/w1.13.png");
       }, 4000);
       ghostTimerRef.current = setTimeout(() => setGhostStep(2), 4500);
       return () => { clearTimeout(wallpaperTimer); if (ghostTimerRef.current) clearTimeout(ghostTimerRef.current); };
