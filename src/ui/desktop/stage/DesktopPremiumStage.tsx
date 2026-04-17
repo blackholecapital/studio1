@@ -17,9 +17,9 @@ export function DesktopPremiumStage({
   const update = useCallback(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const scale = Math.min(vw / STAGE_W, vh / STAGE_H);
-    const left = (vw - STAGE_W * scale) / 2;
-    const top = (vh - STAGE_H * scale) / 2;
+    const scale = vw / STAGE_W;
+    const left = 0;
+    const top = Math.max(0, (vh - STAGE_H * scale) / 2);
     setStageStyle({ transform: `scale(${scale})`, left, top });
     onScaleChange?.(scale);
   }, [onScaleChange]);
