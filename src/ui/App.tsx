@@ -15,7 +15,8 @@ import type { PageKey } from "../domain/project/types";
 import { PAGE_KEYS, PAGE_SHORT_TITLES, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, DEFAULT_INSTRUCTIONS, DEFAULT_EXCLUSIVE_TILES, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
 import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
 import { sanitizeSlug } from "../domain/editor/actions";
-import { DESKTOP_INSTRUCTIONS_IMAGE, CATALOG_PAGE_SIZE, WORKSPACE_W, WORKSPACE_H } from "../domain/editor/constants";
+import { DESKTOP_INSTRUCTIONS_IMAGE, CATALOG_PAGE_SIZE, WORKSPACE_W, WORKSPACE_H, PRODUCT_CONFIG } from "../domain/editor/constants";
+import type { ProductKey } from "../domain/editor/constants";
 
 // Service imports — side-effecting operations
 import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
@@ -127,6 +128,7 @@ export function App() {
     setAuthModalOpen(true);
   }, []);
   const [packageInfo, setPackageInfo] = useState<PackageKey | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductKey>("biz");
   const [deployModal, setDeployModal] = useState<{ slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null>(null);
   const [wallpaperPreview, setWallpaperPreview] = useState<string | null>(null);
   const [topAdDropLabel, setTopAdDropLabel] = useState("Ad Slot");
@@ -837,6 +839,7 @@ export function App() {
     setProject,
     setIsSaved,
     setDeployModal,
+    deployBase: PRODUCT_CONFIG[selectedProduct].base,
   });
 
   const shellLayoutStyle = {
@@ -919,6 +922,8 @@ export function App() {
           onOpenLogin={() => openAuthModal("login")}
           onOpenForgot={() => openAuthModal("forgot")}
           onOpenPackageInfo={(key) => setPackageInfo(key)}
+          selectedProduct={selectedProduct}
+          setSelectedProduct={setSelectedProduct}
         />
       )}
       workspace={(
@@ -1000,7 +1005,7 @@ export function App() {
           <div className="deployModalOverlay" onClick={() => setDeployModal(null)}>
             <div className="deployModalCard" onClick={(e) => e.stopPropagation()}>
               <button className="deployModalClose" onClick={() => setDeployModal(null)}>×</button>
-              <div className="deployModalTitle">Welcome to BIZ PAGES</div>
+              <div className="deployModalTitle">Welcome to {PRODUCT_CONFIG[selectedProduct].label.toUpperCase()}</div>
               {deployModal.ok ? (
                 <div className="deployModalSubtitle">Your page has been deployed. Share these links:</div>
               ) : (
@@ -1011,7 +1016,7 @@ export function App() {
               )}
               <div className="deployModalUrls">
                 <div className="deployModalUrlRow">
-                  <span className="deployModalUrlLabel">Gateway URL</span>
+                  <span className="deployModalUrlLabel">{PRODUCT_CONFIG[selectedProduct].label} URL</span>
                   <div className="deployModalUrlBox">
                     <a className="deployModalUrlLink" href={gatewayUrl} target="_blank" rel="noopener noreferrer">{gatewayUrl}</a>
                     <button className="deployModalCopyBtn" onClick={() => copyUrl("gateway", gatewayUrl)} title="Copy link">
