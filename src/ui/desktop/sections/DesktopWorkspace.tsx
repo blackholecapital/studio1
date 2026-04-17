@@ -8,6 +8,7 @@ export function DesktopWorkspace(props: {
   setExclusiveTiles: Dispatch<SetStateAction<ExclusiveTile[]>>;
   cardState: CardInteractionState;
   setCardState: Dispatch<SetStateAction<CardInteractionState>>;
+  wallpaper: string;
   wallpaperPreview: string | null;
   workspaceUrlPreview: string | null;
   overlappingCardIds: Set<string>;
@@ -20,7 +21,7 @@ export function DesktopWorkspace(props: {
 }) {
   const shapeClass = `shape-${props.tileShapeMode}`;
   return (
-    <section className="workspaceShell" ref={props.workspaceRef as RefObject<HTMLDivElement>}>
+    <section className="workspaceShell" ref={props.workspaceRef as RefObject<HTMLDivElement>} style={{ backgroundImage: `url(${props.wallpaper})` }}>
       <div className="workspaceTint" />
 
       {props.page === "p4" && (

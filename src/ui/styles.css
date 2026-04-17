@@ -1672,7 +1672,10 @@ button {
   border-radius: 0;
   height: 100%;
   overflow: hidden;
-  background: transparent;
+  background-color: #07111d;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
   border: none;
   display: flex;
   flex-direction: column;
