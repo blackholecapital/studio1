@@ -840,7 +840,6 @@ export function App() {
   });
 
   const shellLayoutStyle = {
-    backgroundImage: `url(${wallpaper})`,
     "--layout-sidebar-width": `${layoutConfig.sidebar.width}px`,
     "--layout-workspace-height": `${layoutConfig.workspace.height}px`,
     "--layout-floating-pill-gap": `${layoutConfig.polish.floatingPillGap}px`,
@@ -930,6 +929,7 @@ export function App() {
           setExclusiveTiles={setExclusiveTiles}
           cardState={cardState}
           setCardState={setCardState}
+          wallpaper={wallpaper}
           wallpaperPreview={wallpaperPreview}
           workspaceUrlPreview={workspaceUrlPreview}
           overlappingCardIds={overlappingCardIds}
