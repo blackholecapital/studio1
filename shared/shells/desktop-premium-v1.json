@@ -1,0 +1,14 @@
+{
+  "shellId": "desktop-premium-v1",
+  "stage": { "w": 2560, "h": 1440 },
+  "header": { "h": 120 },
+  "leftRail": { "w": 300 },
+  "rightRail": { "w": 300 },
+  "workspace": { "x": 300, "y": 120, "w": 1960, "h": 1320 },
+  "grid": 20,
+  "wallpaper": {
+    "fit": "cover",
+    "position": "center center",
+    "repeat": "no-repeat"
+  }
+}

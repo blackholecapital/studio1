@@ -17,14 +17,14 @@
 html,
 body,
 #root {
-  min-height: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
 }
 
 body {
-  background:
-    linear-gradient(rgba(6, 10, 18, 0.18), rgba(6, 10, 18, 0.22)),
-    var(--studio-wallpaper, url("/placeholders/black-canvas.jpg")) center / cover fixed no-repeat;
+  background: #07111d;
 }
 
 button,
@@ -42,20 +42,41 @@ button {
   cursor: pointer;
 }
 
+/* ── Stage viewport + shell ──────────────────────────────────────────────── */
+
+.stageViewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #07111d;
+}
+
+.stageShell {
+  position: absolute;
+  width: 2560px;
+  height: 1440px;
+  transform-origin: top left;
+}
+
+/* ── Studio app grid (fills the 2560×1440 stage) ────────────────────────── */
+
 .studioApp {
-  min-height: 100vh;
-  padding: var(--layout-page-gutter) 14%;
+  width: 2560px;
+  height: 1440px;
+  position: relative;
   display: grid;
   grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr) var(--layout-sidebar-width);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 120px 1fr;
   grid-template-areas:
     "topStrip topStrip topStrip"
     "leftRail workspaceShell rightRail";
-  column-gap: var(--layout-column-gutter);
-  row-gap: 6px;
-  background:
-    linear-gradient(rgba(8, 12, 20, 0.12), rgba(8, 12, 20, 0.16)),
-    var(--studio-wallpaper, url("/placeholders/black-canvas.jpg")) center / cover fixed no-repeat;
+  column-gap: 0;
+  row-gap: 0;
+  /* background-image set via inline style (wallpaper); behavior via CSS */
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  overflow: hidden;
 }
 
 .glassPanel,
@@ -78,23 +99,21 @@ button {
 
 .topStrip {
   grid-area: topStrip;
-  min-height: 52px;
-  border-radius: 16px;
+  height: 120px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 18px;
+  padding: 8px 24px;
   gap: 0;
   position: relative;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  border: 1px solid rgba(120, 200, 255, 0.38);
+  border-bottom: 1px solid rgba(120, 200, 255, 0.38);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 12px 28px rgba(0, 0, 0, 0.18),
-    0 0 0 3px rgba(140, 210, 255, 0.56),
-    0 0 42px rgba(110, 200, 255, 0.39);
+    0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 .topStripLeft {
@@ -358,9 +377,14 @@ button {
   display: none;
 }
 
-/* Deploy status banner */
+/* Deploy status banner — absolute so it floats over the stage grid */
 .deployStatusBanner {
-  grid-column: 1 / -1;
+  position: absolute;
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  white-space: nowrap;
   text-align: center;
   padding: 8px 18px;
   font-size: 0.85rem;
@@ -368,7 +392,6 @@ button {
   background: rgba(80, 180, 255, 0.15);
   border: 1px solid rgba(120, 200, 255, 0.3);
   border-radius: 12px;
-  margin-bottom: 8px;
   animation: fadeIn 0.2s ease;
 }
 
@@ -454,26 +477,19 @@ button {
 /* Left rail tint reduced for lighter glass */
 .leftRail {
   grid-area: leftRail;
-  width: var(--layout-sidebar-width);
-  min-width: var(--layout-sidebar-width);
-  max-width: var(--layout-sidebar-width);
-  align-self: start;
-  height: var(--layout-workspace-height);
-  border-radius: 28px;
-  padding: 18px;
+  width: 300px;
+  align-self: stretch;
+  height: 100%;
+  border-radius: 0;
+  padding: 18px 18px 0 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(120, 200, 255, 0.38);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 12px 28px rgba(0, 0, 0, 0.18),
-    0 0 0 3px rgba(140, 210, 255, 0.56),
-    0 0 42px rgba(110, 200, 255, 0.39);
+  border-right: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  padding: 18px 18px 0 18px;
 }
 
 /* ── Left rail vertical tab list ─────────────────────────────────────────── */
@@ -1574,18 +1590,13 @@ button {
   grid-area: workspaceShell;
   width: 100%;
   min-width: 0;
-  align-self: start;
+  align-self: stretch;
   position: relative;
-  border-radius: 30px;
-  height: var(--layout-workspace-height);
+  border-radius: 0;
+  height: 100%;
   overflow: hidden;
   background: transparent;
-  border: 1px solid rgba(120, 200, 255, 0.38);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 12px 28px rgba(0, 0, 0, 0.18),
-    0 0 0 3px rgba(140, 210, 255, 0.56),
-    0 0 42px rgba(110, 200, 255, 0.39);
+  border: none;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1880,23 +1891,17 @@ button {
 
 .rightRail {
   grid-area: rightRail;
-  width: var(--layout-sidebar-width);
-  min-width: var(--layout-sidebar-width);
-  max-width: var(--layout-sidebar-width);
-  align-self: start;
-  height: var(--layout-workspace-height);
-  border-radius: 28px;
+  width: 300px;
+  align-self: stretch;
+  height: 100%;
+  border-radius: 0;
   padding: 18px 18px 0 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(120, 200, 255, 0.38);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 12px 28px rgba(0, 0, 0, 0.18),
-    0 0 0 3px rgba(140, 210, 255, 0.56),
-    0 0 42px rgba(110, 200, 255, 0.39);
+  border-left: 1px solid rgba(120, 200, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
 }
@@ -1938,37 +1943,8 @@ button {
   color: rgba(255, 255, 255, 0.95);
 }
 
-@media (max-width: 1200px) {
-  .studioApp {
-    grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr);
-    grid-template-areas:
-      "topStrip topStrip"
-      "leftRail workspaceShell";
-  }
-
-  .rightRail {
-    display: none;
-  }
-}
-
 @media (max-width: 980px) {
-  .studioApp {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "topStrip"
-      "leftRail"
-      "workspaceShell";
-  }
-
-  .leftRail {
-    min-height: 0;
-  }
-
-  .topStrip {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
+  /* Stage scales uniformly — no layout reflow needed at small viewports */
   .walletButton {
     justify-self: center;
   }

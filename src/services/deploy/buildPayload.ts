@@ -14,31 +14,28 @@ import type { PageKey } from "../../domain/project/types";
 import type { WallpaperItem } from "../../core/wallpaperCatalog";
 import { PAGE_ROUTES, HOLIDAY_WALLPAPER_CODES } from "../../domain/project/defaults";
 import {
-  DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET,
+  SHELL_ID, STAGE_W, STAGE_H,
+  WORKSPACE_X, WORKSPACE_Y,
+  DEPLOY_W, DEPLOY_H,
   MOBILE_DEPLOY_W, MOBILE_DEPLOY_H,
   DEMO_CONTENT_BASE,
 } from "../../domain/editor/constants";
 
-// ── Coordinate scaling ───────────────────────────────────────────────────────
+// ── Coordinate mapping ───────────────────────────────────────────────────────
 
-export type ScaleParams = {
-  actualWsW: number;
-  actualWsH: number;
-};
-
-/** Scale studio coords → desktop deploy coords. */
+/**
+ * Convert workspace-relative card coordinates to stage-space coordinates.
+ * Workspace origin is at (WORKSPACE_X, WORKSPACE_Y) = (300, 120) within the stage.
+ * All w/h values pass through unchanged — no scaling.
+ */
 export function scaleDesktop(
   card: { x: number; y: number; w: number; h: number },
-  params: ScaleParams,
-  wsHeight: number,
 ): { x: number; y: number; w: number; h: number } {
-  const dsx = DEPLOY_W / params.actualWsW;
-  const dsy = DEPLOY_H / wsHeight;
   return {
-    x: Math.round(card.x * dsx) + DEPLOY_X_OFFSET,
-    y: Math.round(card.y * dsy) + DEPLOY_Y_OFFSET,
-    w: Math.round(card.w * dsx),
-    h: Math.round(card.h * dsy),
+    x: card.x + WORKSPACE_X,
+    y: card.y + WORKSPACE_Y,
+    w: card.w,
+    h: card.h,
   };
 }
 
@@ -56,6 +53,12 @@ export function scaleMobile(
     h: Math.round(card.h * dsy),
   };
 }
+
+/** @deprecated ScaleParams is no longer used for desktop — kept for mobile compat. */
+export type ScaleParams = {
+  actualWsW: number;
+  actualWsH: number;
+};
 
 // ── Shared exclusive-tile serializer ─────────────────────────────────────────
 
@@ -82,15 +85,13 @@ function serializeExclusiveTiles(tiles: ExclusiveTile[]) {
 
 export type DesktopBuildContext = {
   slug: string;
-  scaleParams: ScaleParams;
-  wsHeight: number;
   wallpaperCatalog: WallpaperItem[];
   exclusiveTiles: ExclusiveTile[];
 };
 
 /**
  * Build a single desktop page payload for deploy.
- * Exact port of App.tsx buildPagePayload.
+ * Card coordinates are emitted in stage-space (2560×1440).
  */
 export function buildDesktopPagePayload(
   pageKey: string,
@@ -108,6 +109,7 @@ export function buildDesktopPagePayload(
     );
     const activeTiles = serializeExclusiveTiles(ctx.exclusiveTiles);
     const payload: Record<string, unknown> = {
+      shellId: SHELL_ID,
       wallpaperCode,
       viewport: { width: DEPLOY_W, height: DEPLOY_H },
     };
@@ -116,7 +118,7 @@ export function buildDesktopPagePayload(
         .filter((c) => (c.contentCode && c.contentCode !== "c77" && c.contentCode !== "c813") || c.skinId || c.isExclusive)
         .map((card) => ({
           id: card.id,
-          ...scaleDesktop(card, ctx.scaleParams, ctx.wsHeight),
+          ...scaleDesktop(card),
           contentCode: card.contentCode ?? null,
           skinId: card.skinId ? card.skinId.toLowerCase() : null,
           isExclusive: card.isExclusive ?? false,
@@ -133,7 +135,7 @@ export function buildDesktopPagePayload(
     const isUserUpload = cc && /^x\d+$/i.test(cc);
     const base: Record<string, unknown> = {
       id: card.id,
-      ...scaleDesktop(card, ctx.scaleParams, ctx.wsHeight),
+      ...scaleDesktop(card),
       contentCode: cc,
       skinId: card.skinId ? card.skinId.toLowerCase() : null,
       isExclusive: card.isExclusive ?? false,
@@ -145,6 +147,7 @@ export function buildDesktopPagePayload(
     return base;
   });
   return {
+    shellId: SHELL_ID,
     wallpaperCode,
     cards,
     viewport: { width: DEPLOY_W, height: DEPLOY_H },
@@ -174,8 +177,8 @@ export function buildDesktopDeployBundle(
   );
 
   return {
-    main: { version: 1, slug, pages: mainPages },
-    holiday: { version: 1, slug, pages: holidayPages },
+    main: { version: 1, slug, shellId: SHELL_ID, stage: { w: STAGE_W, h: STAGE_H }, pages: mainPages },
+    holiday: { version: 1, slug, shellId: SHELL_ID, stage: { w: STAGE_W, h: STAGE_H }, pages: holidayPages },
   };
 }
 
