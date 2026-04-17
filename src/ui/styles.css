@@ -61,7 +61,8 @@ button {
 /* ── Studio app grid (fills the 2560×1440 stage) ────────────────────────── */
 
 .studioApp {
-  width: 2560px;
+  /* Extends into the horizontal viewport gap so the 1fr workspace fills edge-to-edge */
+  width: calc(2560px + var(--right-gap-stage, 0px));
   height: 1440px;
   position: relative;
   display: grid;
@@ -76,7 +77,8 @@ button {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  overflow: hidden;
+  /* visible so topStrip and rightRail can extend into the horizontal gap */
+  overflow: visible;
 }
 
 .glassPanel,
