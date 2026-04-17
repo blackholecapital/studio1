@@ -61,7 +61,8 @@ button {
 /* ── Studio app grid (fills the 2560×1440 stage) ────────────────────────── */
 
 .studioApp {
-  width: 2560px;
+  /* Extends into the horizontal viewport gap so the 1fr workspace fills edge-to-edge */
+  width: calc(2560px + var(--right-gap-stage, 0px));
   height: 1440px;
   position: relative;
   display: grid;
@@ -115,8 +116,6 @@ button {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 12px 28px rgba(0, 0, 0, 0.18);
-  /* Extend right to fill the horizontal gap between stage and viewport edge */
-  width: calc(100% + var(--right-gap-stage, 0px));
 }
 
 .topStripLeft {
@@ -1907,8 +1906,6 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  /* Shift right to sit flush against the viewport right edge */
-  transform: translateX(var(--right-gap-stage, 0px));
 }
 
 .rightRailAdSection {
