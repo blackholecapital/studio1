@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { thumbnailUrl } from "../../../core/assetResolver";
@@ -53,6 +53,17 @@ export function WallpaperRail(props: {
   const [visibleCount, setVisibleCount] = useState(WALLPAPER_PAGE_SIZE);
   const wallpaperFileInputRef = useRef<HTMLInputElement | null>(null);
   const wallpaperUploadCounterRef = useRef(0);
+  const scrollRegionRef = useRef<HTMLDivElement | null>(null);
+  const isFirstRender = useRef(true);
+
+  // Scroll to the bottom of the rail whenever more wallpapers are loaded
+  // so the newly added thumbnails come into view.
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    const el = scrollRegionRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [visibleCount]);
 
   async function handleWallpaperFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -114,7 +125,7 @@ export function WallpaperRail(props: {
       </div>
 
       {props.leftMode === "create" && (
-        <div className="railScrollRegion">
+        <div className="railScrollRegion" ref={scrollRegionRef}>
           {/* Add Image — top-right of the wallpaper section, mirroring the
               right-rail button which faces inward toward the workspace. */}
           <div className="wallpaperTrayHeader">
