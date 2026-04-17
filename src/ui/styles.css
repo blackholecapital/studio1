@@ -519,7 +519,9 @@ button {
 }
 
 .leftRailPageCategoryRow {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 8px 10px;
@@ -539,6 +541,26 @@ button {
   background: rgba(140, 210, 255, 0.10);
   border-color: rgba(140, 210, 255, 0.28);
   color: #ffffff;
+}
+
+.leftRailPageCategoryRow.isSelected {
+  border-color: rgba(140, 210, 255, 0.45);
+  color: #ffffff;
+}
+
+.leftRailProductRadio {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(140, 210, 255, 0.55);
+  background: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.leftRailProductRadio.isSelected {
+  border-color: #7dd3fc;
+  background: #7dd3fc;
 }
 
 .leftRailTabBtnHalf {

@@ -7,6 +7,13 @@ import { makeEmptyPage } from "../../../domain/project/defaults";
 import type { CardInteractionState, ProjectData, PageKey } from "../../../domain/project/types";
 import { LEFT_AD_IMAGE } from "../../../domain/editor/constants";
 import type { AuthUser } from "../../../services/auth/types";
+import type { ProductKey } from "../../../domain/editor/constants";
+
+const PRODUCT_ROWS: { key: ProductKey; label: string }[] = [
+  { key: "biz",  label: "Biz Pages"  },
+  { key: "ad",   label: "AD Pages"   },
+  { key: "web3", label: "Web-3 Pages" },
+];
 import { uploadFile } from "../../../services/upload/api";
 import { convertToPng } from "../../../shared/lib/normalize";
 
@@ -44,6 +51,8 @@ export function WallpaperRail(props: {
   onOpenLogin: () => void;
   onOpenForgot: () => void;
   onOpenPackageInfo: (key: "biz" | "ad" | "web3") => void;
+  selectedProduct: ProductKey;
+  setSelectedProduct: (key: ProductKey) => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
 
@@ -229,12 +238,19 @@ export function WallpaperRail(props: {
               <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
 
-            {/* Three page-category rows under the Profile row.
-                Each opens a package-info popup mounted at the app overlay. */}
+            {/* Product selector — one radio per product; drives deploy base URL. */}
             <div className="leftRailPageCategoryList">
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("biz")}>Biz Pages</button>
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("ad")}>AD Pages</button>
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("web3")}>Web-3 Pages</button>
+              {PRODUCT_ROWS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`leftRailPageCategoryRow${props.selectedProduct === key ? " isSelected" : ""}`}
+                  onClick={() => props.setSelectedProduct(key)}
+                >
+                  <span className={`leftRailProductRadio${props.selectedProduct === key ? " isSelected" : ""}`} />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
