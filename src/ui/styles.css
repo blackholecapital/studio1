@@ -1186,6 +1186,81 @@ button {
   border-color: rgba(140, 210, 255, 0.32);
 }
 
+/* Wallpaper tray header — holds the Add Image button, right-aligned so it
+   mirrors the right rail's Add Image which faces inward toward the workspace. */
+.wallpaperTrayHeader {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.wallpaperAddImageBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(140, 210, 255, 0.45);
+  background: rgba(140, 210, 255, 0.08);
+  color: rgba(210, 235, 255, 0.82);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.wallpaperAddImageBtn:hover:not(:disabled) {
+  background: rgba(140, 210, 255, 0.18);
+  border-color: rgba(186, 229, 255, 0.75);
+}
+
+.wallpaperAddImageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wallpaperAddImagePlus {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.wallpaperAddImageLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* "More" button appends the next page of wallpapers from the catalog. */
+.wallpaperMoreBtn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(140, 210, 255, 0.3);
+  background: rgba(140, 210, 255, 0.07);
+  color: rgba(210, 235, 255, 0.75);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wallpaperMoreBtn:hover {
+  background: rgba(140, 210, 255, 0.15);
+  color: rgba(220, 240, 255, 0.92);
+}
+
 /* Content tray – same grid as wallpaper */
 .contentTray {
   display: grid;

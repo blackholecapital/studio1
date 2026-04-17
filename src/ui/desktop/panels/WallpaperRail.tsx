@@ -10,6 +10,8 @@ import type { AuthUser } from "../../../services/auth/types";
 import { uploadFile } from "../../../services/upload/api";
 import { convertToPng } from "../../../shared/lib/normalize";
 
+const WALLPAPER_PAGE_SIZE = 16;
+
 type UploadedWallpaper = { code: string; url: string; name: string };
 
 export function WallpaperRail(props: {
@@ -48,10 +50,9 @@ export function WallpaperRail(props: {
   // Uploaded wallpapers are logged-in-only. Local state keeps them for the
   // session; on reload the user re-uploads (v1 simplicity).
   const [uploadedWallpapers, setUploadedWallpapers] = useState<UploadedWallpaper[]>([]);
+  const [visibleCount, setVisibleCount] = useState(WALLPAPER_PAGE_SIZE);
   const wallpaperFileInputRef = useRef<HTMLInputElement | null>(null);
   const wallpaperUploadCounterRef = useRef(0);
-
-  const isLoggedIn = !!props.currentUser;
 
   async function handleWallpaperFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -114,30 +115,29 @@ export function WallpaperRail(props: {
 
       {props.leftMode === "create" && (
         <div className="railScrollRegion">
+          {/* Add Image — top-right of the wallpaper section, mirroring the
+              right-rail button which faces inward toward the workspace. */}
+          <div className="wallpaperTrayHeader">
+            <input
+              ref={wallpaperFileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleWallpaperFileUpload}
+            />
+            <button
+              type="button"
+              className="wallpaperAddImageBtn"
+              title="Upload wallpaper"
+              onClick={() => wallpaperFileInputRef.current?.click()}
+              disabled={props.isPageLocked}
+            >
+              <span className="wallpaperAddImagePlus">+</span>
+              <span className="wallpaperAddImageLabel">Add Image</span>
+            </button>
+          </div>
+
           <section className="wallpaperTray" aria-label="Wallpaper picker">
-            {/* Logged-in users get an "Add Image" button as the first tile
-                so they can upload their own wallpaper. */}
-            {isLoggedIn && (
-              <>
-                <input
-                  ref={wallpaperFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleWallpaperFileUpload}
-                />
-                <button
-                  type="button"
-                  className="wallpaperThumb wallpaperThumbUpload"
-                  title="Upload wallpaper"
-                  onClick={() => wallpaperFileInputRef.current?.click()}
-                  disabled={props.isPageLocked}
-                >
-                  <span className="wallpaperThumbUploadPlus">+</span>
-                  <span className="wallpaperThumbUploadLabel">Add Image</span>
-                </button>
-              </>
-            )}
             {uploadedWallpapers.map((item) => (
               <button
                 key={item.code}
@@ -148,7 +148,7 @@ export function WallpaperRail(props: {
                 <img src={item.url} alt={item.name} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
               </button>
             ))}
-            {wallpaperCatalog.map((item) => (
+            {wallpaperCatalog.slice(0, visibleCount).map((item) => (
               <button
                 key={item.code}
                 className={`wallpaperThumb ${props.wallpaper === item.url ? "isActive" : ""}`}
@@ -159,6 +159,16 @@ export function WallpaperRail(props: {
               </button>
             ))}
           </section>
+
+          {visibleCount < wallpaperCatalog.length && (
+            <button
+              type="button"
+              className="wallpaperMoreBtn"
+              onClick={() => setVisibleCount((c) => Math.min(c + WALLPAPER_PAGE_SIZE, wallpaperCatalog.length))}
+            >
+              More
+            </button>
+          )}
         </div>
       )}
 
