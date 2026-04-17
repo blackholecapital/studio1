@@ -158,17 +158,19 @@ export function WallpaperRail(props: {
                 <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
               </button>
             ))}
+            {/* More tile — same size as a wallpaper thumbnail, sits as the
+                next slot in the grid. Each click loads 16 more from the
+                R2 catalog with no upper cap (slice stops at catalog length). */}
+            {visibleCount < wallpaperCatalog.length && (
+              <button
+                type="button"
+                className="wallpaperThumb wallpaperThumbMore"
+                onClick={() => setVisibleCount((c) => c + WALLPAPER_PAGE_SIZE)}
+              >
+                <span className="wallpaperThumbMoreLabel">More</span>
+              </button>
+            )}
           </section>
-
-          {visibleCount < wallpaperCatalog.length && (
-            <button
-              type="button"
-              className="wallpaperMoreBtn"
-              onClick={() => setVisibleCount((c) => Math.min(c + WALLPAPER_PAGE_SIZE, wallpaperCatalog.length))}
-            >
-              More
-            </button>
-          )}
         </div>
       )}
 

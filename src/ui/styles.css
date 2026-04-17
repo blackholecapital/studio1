@@ -1237,28 +1237,29 @@ button {
   text-transform: uppercase;
 }
 
-/* "More" button appends the next page of wallpapers from the catalog. */
-.wallpaperMoreBtn {
-  width: 100%;
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(140, 210, 255, 0.3);
+/* "More" tile — 17th slot in the wallpaper grid, same thumbnail size/shape.
+   No upper-count cap in JS; slice() stops naturally at catalog length. */
+.wallpaperThumbMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(140, 210, 255, 0.4);
   background: rgba(140, 210, 255, 0.07);
-  color: rgba(210, 235, 255, 0.75);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.wallpaperMoreBtn:hover {
-  background: rgba(140, 210, 255, 0.15);
-  color: rgba(220, 240, 255, 0.92);
+.wallpaperThumbMore:hover {
+  background: rgba(140, 210, 255, 0.16);
+  border-color: rgba(186, 229, 255, 0.7);
+}
+
+.wallpaperThumbMoreLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(210, 235, 255, 0.8);
 }
 
 /* Content tray – same grid as wallpaper */
