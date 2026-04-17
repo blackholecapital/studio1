@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import type { PageKey, ProjectData, ExclusiveTile, CardInteractionState } from "../../../domain/project/types";
 import { cardStateToPageData, hasAnyOverlap } from "../../../domain/editor/selectors";
 import { ensureUniqueSlug } from "../../../domain/editor/actions";
-import { GATEWAY_BASE } from "../../../domain/editor/constants";
 import { buildDesktopDeployBundle } from "../../../services/deploy/buildPayload";
 import { saveProject, deployGateway, downloadProjectJson } from "../../state/editorExport";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
@@ -22,6 +21,8 @@ type Args = {
   setProject: (next: ProjectData) => void;
   setIsSaved: (next: boolean) => void;
   setDeployModal: (next: { slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null) => void;
+  /** Base URL for the selected product (biz / ad / web3). */
+  deployBase: string;
 };
 
 export function useDesktopDeployFlow(args: Args) {
@@ -80,8 +81,8 @@ export function useDesktopDeployFlow(args: Args) {
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
     args.setDeploying(false);
 
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${effectiveSlug}/holiday`;
+    const primaryUrl = result.primaryUrl ?? `${args.deployBase}/${effectiveSlug}/gate`;
+    const holidayUrl = result.holidayUrl ?? `${args.deployBase}/${effectiveSlug}/holiday`;
     if (result.ok) args.setDeployStatus(null);
     args.setDeployModal({ slug: effectiveSlug, primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }, [args]);

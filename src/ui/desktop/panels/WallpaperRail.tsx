@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { thumbnailUrl } from "../../../core/assetResolver";
@@ -7,6 +7,13 @@ import { makeEmptyPage } from "../../../domain/project/defaults";
 import type { CardInteractionState, ProjectData, PageKey } from "../../../domain/project/types";
 import { LEFT_AD_IMAGE } from "../../../domain/editor/constants";
 import type { AuthUser } from "../../../services/auth/types";
+import type { ProductKey } from "../../../domain/editor/constants";
+
+const PRODUCT_ROWS: { key: ProductKey; label: string }[] = [
+  { key: "biz",  label: "Biz Pages"  },
+  { key: "ad",   label: "AD Pages"   },
+  { key: "web3", label: "Web-3 Pages" },
+];
 import { uploadFile } from "../../../services/upload/api";
 import { convertToPng } from "../../../shared/lib/normalize";
 
@@ -44,6 +51,8 @@ export function WallpaperRail(props: {
   onOpenLogin: () => void;
   onOpenForgot: () => void;
   onOpenPackageInfo: (key: "biz" | "ad" | "web3") => void;
+  selectedProduct: ProductKey;
+  setSelectedProduct: (key: ProductKey) => void;
 }) {
   const tabs: Array<"wallpaper" | "pages"> = ["wallpaper", "pages"];
 
@@ -53,6 +62,17 @@ export function WallpaperRail(props: {
   const [visibleCount, setVisibleCount] = useState(WALLPAPER_PAGE_SIZE);
   const wallpaperFileInputRef = useRef<HTMLInputElement | null>(null);
   const wallpaperUploadCounterRef = useRef(0);
+  const scrollRegionRef = useRef<HTMLDivElement | null>(null);
+  const isFirstRender = useRef(true);
+
+  // Scroll to the bottom of the rail whenever more wallpapers are loaded
+  // so the newly added thumbnails come into view.
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    const el = scrollRegionRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [visibleCount]);
 
   async function handleWallpaperFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -114,7 +134,7 @@ export function WallpaperRail(props: {
       </div>
 
       {props.leftMode === "create" && (
-        <div className="railScrollRegion">
+        <div className="railScrollRegion" ref={scrollRegionRef}>
           {/* Add Image — top-right of the wallpaper section, mirroring the
               right-rail button which faces inward toward the workspace. */}
           <div className="wallpaperTrayHeader">
@@ -158,17 +178,19 @@ export function WallpaperRail(props: {
                 <img src={thumbnailUrl(item.url)} alt={item.code} draggable={false} loading="lazy" decoding="async" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
               </button>
             ))}
+            {/* More tile — same size as a wallpaper thumbnail, sits as the
+                next slot in the grid. Each click loads 16 more from the
+                R2 catalog with no upper cap (slice stops at catalog length). */}
+            {visibleCount < wallpaperCatalog.length && (
+              <button
+                type="button"
+                className="wallpaperThumb wallpaperThumbMore"
+                onClick={() => setVisibleCount((c) => c + WALLPAPER_PAGE_SIZE)}
+              >
+                <span className="wallpaperThumbMoreLabel">More</span>
+              </button>
+            )}
           </section>
-
-          {visibleCount < wallpaperCatalog.length && (
-            <button
-              type="button"
-              className="wallpaperMoreBtn"
-              onClick={() => setVisibleCount((c) => Math.min(c + WALLPAPER_PAGE_SIZE, wallpaperCatalog.length))}
-            >
-              More
-            </button>
-          )}
         </div>
       )}
 
@@ -216,12 +238,19 @@ export function WallpaperRail(props: {
               <button className="leftRailTabBtn leftRailTabBtnHalf leftRailBigHelp" onClick={(e) => { e.stopPropagation(); props.setTooltipOpen(props.tooltipOpen === "all" ? null : "all"); }} title="Help">?</button>
             </div>
 
-            {/* Three page-category rows under the Profile row.
-                Each opens a package-info popup mounted at the app overlay. */}
+            {/* Product selector — one radio per product; drives deploy base URL. */}
             <div className="leftRailPageCategoryList">
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("biz")}>Biz Pages</button>
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("ad")}>AD Pages</button>
-              <button type="button" className="leftRailPageCategoryRow" onClick={() => props.onOpenPackageInfo("web3")}>Web-3 Pages</button>
+              {PRODUCT_ROWS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`leftRailPageCategoryRow${props.selectedProduct === key ? " isSelected" : ""}`}
+                  onClick={() => props.setSelectedProduct(key)}
+                >
+                  <span className={`leftRailProductRadio${props.selectedProduct === key ? " isSelected" : ""}`} />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -65,6 +65,17 @@ export const DEMO_CONTENT_BASE = "https://demo-content.xyz-labs.xyz";
 export const R2_DEPLOY_ENDPOINT = "https://tenant-cdn.cryptocapitalgroupfl.workers.dev/deploy-demo";
 export const GATEWAY_BASE = "https://gateway.xyz-labs.xyz";
 
+export type ProductKey = "biz" | "ad" | "web3";
+
+/** Per-product deploy base URLs and display labels.
+ *  All products share the same deployer, slug system, and R2 resolvers — only
+ *  the base URL differs. */
+export const PRODUCT_CONFIG: Record<ProductKey, { label: string; base: string }> = {
+  biz:  { label: "Biz Pages",   base: "https://bizpages.xyz-labs.xyz" },
+  ad:   { label: "AD Pages",    base: "https://adpages.xyz-labs.xyz"  },
+  web3: { label: "Web-3 Pages", base: "https://gateway.xyz-labs.xyz"  },
+};
+
 // ── Default content images ───────────────────────────────────────────────────
 
 /** Instruction card image shown on new desktop cards. */
