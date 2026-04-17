@@ -110,6 +110,9 @@ button {
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
+  border-top: none;
+  border-left: none;
+  border-right: none;
   border-bottom: 1px solid rgba(120, 200, 255, 0.38);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -142,7 +145,7 @@ button {
   transform: translate(-50%, -50%);
   font-weight: 800;
   letter-spacing: 0.06em;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   white-space: nowrap;
   color: rgba(210, 235, 255, 0.75);
   cursor: pointer;
@@ -156,7 +159,7 @@ button {
 
 /* ID label + input + Save — floating text style, no pill */
 .topStripIdLabel {
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: rgba(180, 225, 255, 0.6);
   letter-spacing: 0.04em;
@@ -230,7 +233,7 @@ button {
   outline: none;
   color: rgba(210, 235, 255, 0.75);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 1.275rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   cursor: pointer;
@@ -274,7 +277,7 @@ button {
 }
 
 .topStripTitle {
-  font-size: 0.85rem;
+  font-size: 1.275rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -282,7 +285,7 @@ button {
   padding: 0 8px;
   /* Fixed width so arrows/buttons don't shift when cycling between short/long page names */
   display: inline-block;
-  width: 120px;
+  width: 180px;
   text-align: center;
   cursor: pointer;
   transition: color 0.15s;
@@ -477,7 +480,7 @@ button {
 /* Left rail tint reduced for lighter glass */
 .leftRail {
   grid-area: leftRail;
-  width: 300px;
+  width: 100%;
   align-self: stretch;
   height: 100%;
   border-radius: 0;
@@ -486,6 +489,9 @@ button {
   flex-direction: column;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.55);
+  border-top: none;
+  border-left: none;
+  border-bottom: none;
   border-right: 1px solid rgba(120, 200, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
@@ -1891,7 +1897,7 @@ button {
 
 .rightRail {
   grid-area: rightRail;
-  width: 300px;
+  width: 100%;
   align-self: stretch;
   height: 100%;
   border-radius: 0;
@@ -1900,6 +1906,9 @@ button {
   flex-direction: column;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.55);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
   border-left: 1px solid rgba(120, 200, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
@@ -2883,7 +2892,7 @@ button {
   border: 1px solid transparent;
   background: transparent;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 1.275rem;
   font-weight: 700;
   color: rgba(210, 235, 255, 0.75);
   letter-spacing: 0.12em;
