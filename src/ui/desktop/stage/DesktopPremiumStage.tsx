@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { STAGE_W, STAGE_H } from "../../../domain/editor/constants";
 
 export function DesktopPremiumStage({
@@ -8,19 +8,23 @@ export function DesktopPremiumStage({
   children: React.ReactNode;
   onScaleChange?: (scale: number) => void;
 }) {
-  const [stageStyle, setStageStyle] = useState({
-    transform: "scale(1)",
-    left: 0 as number,
-    top: 0 as number,
-  });
+  const shellRef = useRef<HTMLDivElement>(null);
 
   const update = useCallback(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const scale = vw / STAGE_W;
+    // Fit both dimensions so no content is clipped
+    const scale = Math.min(vw / STAGE_W, vh / STAGE_H);
     const left = 0;
     const top = Math.max(0, (vh - STAGE_H * scale) / 2);
-    setStageStyle({ transform: `scale(${scale})`, left, top });
+    // Extra stage-unit distance needed to push right rail / top bar to viewport edge
+    const rightGapStage = Math.max(0, (vw - STAGE_W * scale) / scale);
+    const el = shellRef.current;
+    if (!el) return;
+    el.style.transform = `scale(${scale})`;
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.setProperty("--right-gap-stage", `${rightGapStage}px`);
     onScaleChange?.(scale);
   }, [onScaleChange]);
 
@@ -32,7 +36,7 @@ export function DesktopPremiumStage({
 
   return (
     <div className="stageViewport">
-      <div className="stageShell" style={stageStyle}>
+      <div className="stageShell" ref={shellRef}>
         {children}
       </div>
     </div>

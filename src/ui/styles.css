@@ -76,7 +76,8 @@ button {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  overflow: hidden;
+  /* visible so topStrip and rightRail can extend into the horizontal gap */
+  overflow: visible;
 }
 
 .glassPanel,
@@ -114,6 +115,8 @@ button {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 12px 28px rgba(0, 0, 0, 0.18);
+  /* Extend right to fill the horizontal gap between stage and viewport edge */
+  width: calc(100% + var(--right-gap-stage, 0px));
 }
 
 .topStripLeft {
@@ -1904,6 +1907,8 @@ button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
+  /* Shift right to sit flush against the viewport right edge */
+  transform: translateX(var(--right-gap-stage, 0px));
 }
 
 .rightRailAdSection {
