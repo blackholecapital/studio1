@@ -4,13 +4,19 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 // Types are now defined in the domain layer; re-export for backwards compat.
 export type { CardModel, CardInteractionState } from "../../domain/project/types";
 import type { CardModel, CardInteractionState } from "../../domain/project/types";
+import { GRID_SNAP } from "../../domain/editor/constants";
 
 type Params = {
   cardState: CardInteractionState;
   setCardState: React.Dispatch<React.SetStateAction<CardInteractionState>>;
   layoutConfig: { workspace: { width: number; height: number } };
-  enableNoOverlap?: boolean;
+  /** CSS transform scale of the stage. Pointer deltas are divided by this to get stage-space movement. */
+  scale?: number;
 };
+
+function snapToGrid(v: number): number {
+  return Math.round(v / GRID_SNAP) * GRID_SNAP;
+}
 
 export function useCardInteractions(params: Params) {
   const { cardState, setCardState, layoutConfig } = params;
@@ -19,6 +25,12 @@ export function useCardInteractions(params: Params) {
   const activeDragCardIdRef = useRef<string | null>(null);
   const activeResizeCardIdRef = useRef<string | null>(null);
   const [overlappingCardIds, setOverlappingCardIds] = useState<Set<string>>(new Set());
+
+  // Keep a ref to the current scale so the pointer handlers always read the latest value
+  const scaleRef = useRef(params.scale ?? 1);
+  useEffect(() => {
+    scaleRef.current = params.scale ?? 1;
+  }, [params.scale]);
 
   const dragRef = useRef<null | {
     id: string;
@@ -119,18 +131,20 @@ export function useCardInteractions(params: Params) {
     function onMove(ev: PointerEvent) {
       const drag = dragRef.current;
       const resize = resizeRef.current;
+      const scale = scaleRef.current;
 
       if (drag && ev.pointerId === drag.pointerId) {
         setCardState((current) => {
           const moving = current.cards.find((c) => c.id === drag.id);
           if (!moving) return current;
 
-          const dx = ev.clientX - drag.startClientX;
-          const dy = ev.clientY - drag.startClientY;
+          // Convert viewport-pixel delta to stage-pixel delta
+          const dx = (ev.clientX - drag.startClientX) / scale;
+          const dy = (ev.clientY - drag.startClientY) / scale;
 
           const candidate = clampToWorkspace({
-            x: drag.startX + dx,
-            y: drag.startY + dy,
+            x: snapToGrid(drag.startX + dx),
+            y: snapToGrid(drag.startY + dy),
             w: moving.w,
             h: moving.h
           });
@@ -150,15 +164,16 @@ export function useCardInteractions(params: Params) {
           const moving = current.cards.find((c) => c.id === resize.id);
           if (!moving) return current;
 
-          const dx = ev.clientX - resize.startClientX;
-          const dy = ev.clientY - resize.startClientY;
+          const scale = scaleRef.current;
+          // Convert viewport-pixel delta to stage-pixel delta
+          const dx = (ev.clientX - resize.startClientX) / scale;
+          const dy = (ev.clientY - resize.startClientY) / scale;
 
           const maxW = workspaceRef.current?.offsetWidth ?? layoutConfig.workspace.width;
           const maxH = workspaceRef.current?.offsetHeight ?? layoutConfig.workspace.height;
           const edgeInset = 2;
-          // Cap width/height so the card cannot grow past the workspace right/bottom edge
-          const nextW = Math.max(120, Math.min(Math.round(resize.startW + dx), maxW - moving.x - edgeInset));
-          const nextH = Math.max(80,  Math.min(Math.round(resize.startH + dy), maxH - moving.y - edgeInset));
+          const nextW = snapToGrid(Math.max(120, Math.min(Math.round(resize.startW + dx), maxW - moving.x - edgeInset)));
+          const nextH = snapToGrid(Math.max(80,  Math.min(Math.round(resize.startH + dy), maxH - moving.y - edgeInset)));
 
           const candidate = clampToWorkspace({
             x: moving.x,

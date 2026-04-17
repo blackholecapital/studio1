@@ -8,13 +8,40 @@
  *   - src/ui/state/layoutConfig.ts (layoutConfig)
  */
 
-// ── Desktop deploy dimensions ────────────────────────────────────────────────
+// ── desktop-premium-v1 stage spec ────────────────────────────────────────────
 
-export const DEPLOY_W = 1400;
-export const DEPLOY_H = 800;
+export const SHELL_ID = "desktop-premium-v1";
+
+/** Canonical stage width. Both Studio and Receiver render against this. */
+export const STAGE_W = 2560;
+/** Canonical stage height. Both Studio and Receiver render against this. */
+export const STAGE_H = 1440;
+
+export const SHELL_HEADER_H = 120;
+export const SHELL_LEFT_RAIL_W = 300;
+export const SHELL_RIGHT_RAIL_W = 300;
+
+/** Workspace origin within the stage (left rail width). */
+export const WORKSPACE_X = 300;
+/** Workspace origin within the stage (header height). */
+export const WORKSPACE_Y = 120;
+/** Workspace width = stage width - left rail - right rail. */
+export const WORKSPACE_W = 1960;
+/** Workspace height = stage height - header. */
+export const WORKSPACE_H = 1320;
+
+/** Default snap grid (stage pixels). */
+export const GRID_SNAP = 20;
+/** Fine-movement snap grid (stage pixels). */
+export const GRID_FINE = 10;
+
+// ── Desktop deploy dimensions ─────────────────────────────────────────────────
+// Deploy coordinates are in stage-space (2560 × 1440).
+
+export const DEPLOY_W = 2560;
+export const DEPLOY_H = 1440;
 export const DEPLOY_X_OFFSET = 0;
-/** 10% of DEPLOY_H — clears the deployed nav bar. */
-export const DEPLOY_Y_OFFSET = 80;
+export const DEPLOY_Y_OFFSET = 0;
 
 // ── Mobile deploy dimensions ─────────────────────────────────────────────────
 

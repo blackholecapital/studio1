@@ -7,6 +7,7 @@ import {
 } from "./state/editorExport";
 import { layoutConfig } from "./state/layoutConfig";
 import { useCardInteractions } from "./hooks/useCardInteractions";
+import { DesktopPremiumStage } from "./desktop/stage/DesktopPremiumStage";
 
 // Domain imports — shared types, constants, selectors, actions
 import type { CardModel, CardInteractionState, PageData, ProjectData, ExclusiveTile } from "../domain/project/types";
@@ -14,7 +15,7 @@ import type { PageKey } from "../domain/project/types";
 import { PAGE_KEYS, PAGE_SHORT_TITLES, PAGE_ROUTES, makeEmptyPage, makeEmptyProject, DEFAULT_INSTRUCTIONS, DEFAULT_EXCLUSIVE_TILES, HOLIDAY_WALLPAPER_CODES } from "../domain/project/defaults";
 import { pageDataToCardState, cardStateToPageData, hasAnyOverlap, maxCardCounter } from "../domain/editor/selectors";
 import { sanitizeSlug } from "../domain/editor/actions";
-import { DEPLOY_W, DEPLOY_H, DEPLOY_X_OFFSET, DEPLOY_Y_OFFSET, DESKTOP_INSTRUCTIONS_IMAGE, LEFT_AD_IMAGE, RIGHT_AD_IMAGE, CATALOG_PAGE_SIZE, DEMO_CONTENT_BASE } from "../domain/editor/constants";
+import { DESKTOP_INSTRUCTIONS_IMAGE, CATALOG_PAGE_SIZE, WORKSPACE_W, WORKSPACE_H } from "../domain/editor/constants";
 
 // Service imports — side-effecting operations
 import { saveDesktopSlug, markGhostFlowSeen, resetGhostFlow as resetGhostFlowStorage } from "../services/storage/projectStore";
@@ -60,8 +61,8 @@ const INSTRUCTIONS_IMAGE = DESKTOP_INSTRUCTIONS_IMAGE;
 
 function makeDefaultCard(wsW?: number, wsH?: number): CardModel {
   cardCounter += 1;
-  const w = wsW ?? layoutConfig.workspace.width;
-  const h = wsH ?? layoutConfig.workspace.height;
+  const w = wsW ?? WORKSPACE_W;
+  const h = wsH ?? WORKSPACE_H;
   return {
     id: `card-${cardCounter}`,
     label: `Card ${cardCounter}`,
@@ -115,6 +116,7 @@ export function App() {
   const [isSaved, setIsSaved] = useState(false);
   const [isGlobalWallpaper, setIsGlobalWallpaper] = useState(false);
   const [tileShapeMode, setTileShapeMode] = useState<"sharp" | "rounded" | "circle">("rounded");
+  const [stageScale, setStageScale] = useState(1);
 
   // Auth session (shared across Studio + Gateway via /api/auth/session).
   const auth = useAuthSession();
@@ -285,7 +287,7 @@ export function App() {
     overlappingCardIds,
     handleCardPointerDown,
     handleResizePointerDown
-  } = useCardInteractions({ cardState, setCardState, layoutConfig });
+  } = useCardInteractions({ cardState, setCardState, layoutConfig, scale: stageScale });
 
   const selectedCard = useMemo(() => getSelectedCard(cardState), [cardState]);
   const selectedCardLockSize = selectedCard?.lockSize ?? false;
@@ -584,8 +586,8 @@ export function App() {
       return updated;
     });
     // Reset current page — use actual workspace dimensions so the card lands centered
-    const wsW = workspaceRef.current?.offsetWidth  ?? layoutConfig.workspace.width;
-    const wsH = workspaceRef.current?.offsetHeight ?? layoutConfig.workspace.height;
+    const wsW = workspaceRef.current?.offsetWidth  ?? WORKSPACE_W;
+    const wsH = workspaceRef.current?.offsetHeight ?? WORKSPACE_H;
     const centeredCard = makeDefaultCard(wsW, wsH);
     centeredCard.contentImage = "https://media.xyz-labs.xyz/content/c77.png";
     centeredCard.contentCode = "c77";
@@ -624,11 +626,11 @@ export function App() {
 
   function applyCubeLayout(count: 1 | 2 | 3 | 4 | 5 | 6) {
     if (cardState.lockPage) return;
-    const baseW = 260;
-    const baseH = 180;
+    const baseW = 560;
+    const baseH = 320;
     const margin = 16;
-    const wsW = workspaceRef.current?.offsetWidth  ?? layoutConfig.workspace.width;
-    const wsH = workspaceRef.current?.offsetHeight ?? layoutConfig.workspace.height;
+    const wsW = workspaceRef.current?.offsetWidth  ?? WORKSPACE_W;
+    const wsH = workspaceRef.current?.offsetHeight ?? WORKSPACE_H;
     const leftX   = Math.round(wsW * 0.06);
     const rightX  = Math.round(wsW * 0.94 - baseW);
     const centerX = Math.round((wsW - baseW) / 2);
@@ -829,8 +831,6 @@ export function App() {
     wallpaper,
     pageInstructions,
     isGlobalWallpaper,
-    layout: layoutConfig,
-    workspaceWidth: workspaceRef.current?.offsetWidth,
     exclusiveTiles,
     setDeploying,
     setDeployStatus,
@@ -840,20 +840,11 @@ export function App() {
   });
 
   const shellLayoutStyle = {
-    "--studio-wallpaper": `url(${wallpaper})`,
+    backgroundImage: `url(${wallpaper})`,
     "--layout-sidebar-width": `${layoutConfig.sidebar.width}px`,
-    "--layout-top-strip-min-height": `${layoutConfig.header.topStripMinHeight}px`,
-    "--layout-header-strip-min-height": `${layoutConfig.header.headerStripMinHeight}px`,
-    "--layout-workspace-width": `${layoutConfig.workspace.width}px`,
     "--layout-workspace-height": `${layoutConfig.workspace.height}px`,
-    "--layout-workspace-max-width": `${layoutConfig.workspace.maxWidth}px`,
-    "--layout-workspace-max-height": `${layoutConfig.workspace.maxHeight}px`,
-    "--layout-page-gutter": `${layoutConfig.gutter.page}px`,
-    "--layout-row-gutter": `${layoutConfig.gutter.row}px`,
-    "--layout-column-gutter": `${layoutConfig.gutter.column}px`,
     "--layout-floating-pill-gap": `${layoutConfig.polish.floatingPillGap}px`,
     "--layout-header-strip-gap": `${layoutConfig.polish.headerStripGap}px`,
-    "--layout-workspace-inset-start": `${layoutConfig.polish.workspaceInsetStart}px`
   } as CSSProperties;
 
   const handleRailScroll = useCallback(() => {
@@ -867,6 +858,7 @@ export function App() {
   }, [activeTab]);
 
   return (
+    <DesktopPremiumStage onScaleChange={setStageScale}>
     <DesktopAppShell
       shellLayoutStyle={shellLayoutStyle}
       tooltipOpen={tooltipOpen}
@@ -1126,5 +1118,6 @@ export function App() {
         </div>
       )}
     </DesktopAppShell>
+    </DesktopPremiumStage>
   );
 }

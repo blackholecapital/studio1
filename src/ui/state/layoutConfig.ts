@@ -1,25 +1,25 @@
 export const layoutConfig = {
   sidebar: {
-    width: 175
+    width: 300
   },
   header: {
-    topStripMinHeight: 23,
-    headerStripMinHeight: 28
+    topStripMinHeight: 120,
+    headerStripMinHeight: 0
   },
   workspace: {
-    width: 900,
-    height: 720,
-    maxWidth: 1120,
-    maxHeight: 900
+    width: 1960,
+    height: 1320,
+    maxWidth: 1960,
+    maxHeight: 1320
   },
   gutter: {
-    page: 16,
-    row: 16,
-    column: 7
+    page: 0,
+    row: 0,
+    column: 0
   },
   polish: {
     floatingPillGap: 12,
     headerStripGap: 20,
-    workspaceInsetStart: 6
+    workspaceInsetStart: 0
   }
 } as const;

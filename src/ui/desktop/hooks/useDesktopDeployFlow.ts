@@ -3,7 +3,6 @@ import type { PageKey, ProjectData, ExclusiveTile, CardInteractionState } from "
 import { cardStateToPageData, hasAnyOverlap } from "../../../domain/editor/selectors";
 import { ensureUniqueSlug } from "../../../domain/editor/actions";
 import { GATEWAY_BASE } from "../../../domain/editor/constants";
-import { layoutConfig } from "../../state/layoutConfig";
 import { buildDesktopDeployBundle } from "../../../services/deploy/buildPayload";
 import { saveProject, deployGateway, downloadProjectJson } from "../../state/editorExport";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
@@ -17,8 +16,6 @@ type Args = {
   wallpaper: string;
   pageInstructions: string;
   isGlobalWallpaper: boolean;
-  layout: typeof layoutConfig;
-  workspaceWidth?: number;
   exclusiveTiles: ExclusiveTile[];
   setDeploying: (next: boolean) => void;
   setDeployStatus: (next: string | null) => void;
@@ -70,8 +67,6 @@ export function useDesktopDeployFlow(args: Args) {
 
     const { main: mainPayload, holiday: holidayPayload } = buildDesktopDeployBundle(effectiveSlug, full.pages, {
       slug: effectiveSlug,
-      scaleParams: { actualWsW: args.workspaceWidth ?? args.layout.workspace.width, actualWsH: args.layout.workspace.height },
-      wsHeight: args.layout.workspace.height,
       wallpaperCatalog,
       exclusiveTiles: full.pages.p4?.exclusiveTiles ?? args.exclusiveTiles,
     });
