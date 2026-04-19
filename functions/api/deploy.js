@@ -50,11 +50,11 @@ async function handleDeploy({ request, env }) {
   await putJson(env.DEMO_BUCKET, siteKey, body.main);
   await putJson(env.DEMO_BUCKET, holidayKey, body.holiday);
 
-  const base = String(env.DEMO_BASE_URL || "https://gateway.xyz-labs.xyz").replace(/\/$/, "");
+  const base = String(env.DEMO_BASE_URL || "https://homeway.xyz-labs.xyz").replace(/\/$/, "");
   return json({
     ok: true,
     slug,
-    primaryUrl: `${base}/${slug}/gate`,
+    primaryUrl: `${base}/${slug}/home`,
     holidayUrl: `${base}/${slug}/holiday`,
     keys: { main: mainKey, site: siteKey, holiday: holidayKey },
   });
