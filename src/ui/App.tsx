@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties, DragEvent } from "react";
 import { DEFAULT_WALLPAPER_URL } from "../core/wallpaperCatalog";
 import {
@@ -1001,7 +1002,7 @@ export function App() {
             setTimeout(() => setCopiedKey(null), 1800);
           });
         }
-        return (
+        return createPortal(
           <div className="deployModalOverlay" onClick={() => setDeployModal(null)}>
             <div className="deployModalCard" onClick={(e) => e.stopPropagation()}>
               <button className="deployModalClose" onClick={() => setDeployModal(null)}>×</button>
@@ -1046,7 +1047,8 @@ export function App() {
               </div>
               <div className="deployModalExpire">Demo links expire in 24 hours</div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
