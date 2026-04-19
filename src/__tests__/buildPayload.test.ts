@@ -40,15 +40,15 @@ describe("buildDesktopDeployBundle", () => {
   it("maps page keys to route names", () => {
     const bundle = buildDesktopDeployBundle(slug, project.pages, ctx);
     const pages = bundle.main.pages as Record<string, unknown>;
-    expect(pages).toHaveProperty("gate");
+    expect(pages).toHaveProperty("home");
     expect(pages).toHaveProperty("members");
-    expect(pages).toHaveProperty("access");
-    expect(pages).toHaveProperty("tier-2");
+    expect(pages).toHaveProperty("services");
+    expect(pages).toHaveProperty("exclusive");
   });
 
-  it("always emits 6 exclusive tiles for tier-2", () => {
+  it("always emits 6 exclusive tiles for exclusive", () => {
     const bundle = buildDesktopDeployBundle(slug, project.pages, ctx);
-    const tier2 = (bundle.main.pages as Record<string, any>)["tier-2"];
+    const tier2 = (bundle.main.pages as Record<string, any>)["exclusive"];
     expect(tier2.exclusiveTiles).toHaveLength(6);
   });
 
@@ -67,7 +67,7 @@ describe("buildDesktopDeployBundle", () => {
       exclusiveTiles: tilesWithContent,
     });
 
-    const tier2 = (bundle.main.pages as Record<string, any>)["tier-2"];
+    const tier2 = (bundle.main.pages as Record<string, any>)["exclusive"];
     expect(tier2.exclusiveTiles).toHaveLength(6);
 
     // Tile 4 (index 3) should be locked with contentCode
@@ -89,7 +89,7 @@ describe("buildDesktopDeployBundle", () => {
     }];
 
     const bundle = buildDesktopDeployBundle(slug, projectWithCard.pages, ctx);
-    const gate = (bundle.main.pages as Record<string, any>)["gate"];
+    const gate = (bundle.main.pages as Record<string, any>)["home"];
     const card = gate.cards[0];
 
     // Stage-space = workspace-relative + (WORKSPACE_X, WORKSPACE_Y)

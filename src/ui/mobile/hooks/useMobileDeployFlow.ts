@@ -85,7 +85,7 @@ export function useMobileDeployFlow(args: Args) {
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
     args.setDeploying(false);
     args.setDeployStatus(null);
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${args.slug}/gate`;
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${args.slug}/home`;
     const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${args.slug}/holiday`;
     args.setDeployModal({ primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }, [args]);

@@ -1,7 +1,7 @@
 /**
  * Runtime hydration for exclusive tiles on the deployed gateway.
  *
- * The studio serializes exclusive tiles into `pages["tier-2"].exclusiveTiles`
+ * The studio serializes exclusive tiles into `pages["exclusive"].exclusiveTiles`
  * using this deployed JSON shape:
  *
  *   { tileNumber, contentCode, tileName, lockStatus, purchasePrice, contentUrl? }
@@ -185,7 +185,7 @@ function makeDefaultTile(slot: number): HydratedExclusiveTile {
  * an array of exactly EXCLUSIVE_TILE_COUNT HydratedExclusiveTile objects,
  * ready for direct rendering.
  *
- * @param pageData  The parsed page object for the "tier-2" page.
+ * @param pageData  The parsed page object for the "exclusive" page.
  *                  Expected to contain an `exclusiveTiles` array.
  *
  * @returns Array of 6 HydratedExclusiveTile objects. Missing/invalid

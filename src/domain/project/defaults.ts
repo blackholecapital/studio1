@@ -16,17 +16,17 @@ export const PAGE_KEYS: PageKey[] = ["p1", "p2", "p3", "p4"];
 
 /** Backend route names used in deploy payloads. Shared by desktop and mobile. */
 export const PAGE_ROUTES: Record<PageKey, string> = {
-  p1: "gate",
+  p1: "home",
   p2: "members",
-  p3: "access",
-  p4: "tier-2",
+  p3: "services",
+  p4: "exclusive",
 };
 
 /** Short display titles for page keys. */
 export const PAGE_SHORT_TITLES: Record<PageKey, string> = {
   p1: "Home",
   p2: "Members",
-  p3: "Access",
+  p3: "Services",
   p4: "Exclusive",
 };
 
