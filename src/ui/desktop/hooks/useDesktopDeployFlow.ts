@@ -21,6 +21,8 @@ type Args = {
   setProject: (next: ProjectData) => void;
   setIsSaved: (next: boolean) => void;
   setDeployModal: (next: { slug: string; primaryUrl: string; holidayUrl: string; ok: boolean; error?: string } | null) => void;
+  /** Product key for routing deploys (biz / ad / web3). */
+  productKey: string;
   /** Base URL for the selected product (biz / ad / web3). */
   deployBase: string;
 };
@@ -75,14 +77,19 @@ export function useDesktopDeployFlow(args: Args) {
     saveProject(full);
     args.setProject(full);
     args.setIsSaved(false);
-    args.setDeploying(true);
+     args.setDeploying(true);
     args.setDeployStatus("Deploying...");
 
-    const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
+    const result = await deployGateway(
+      full,
+      { main: mainPayload, holiday: holidayPayload },
+      { productKey: args.productKey, deployBase: args.deployBase },
+    );
     args.setDeploying(false);
 
-    const primaryUrl = result.primaryUrl ?? `${args.deployBase}/${effectiveSlug}/gate`;
-    const holidayUrl = result.holidayUrl ?? `${args.deployBase}/${effectiveSlug}/holiday`;
+    // Always display the URL for the selected product mode (worker return URLs may be legacy)
+    const primaryUrl = `${args.deployBase}/${effectiveSlug}/gate`;
+    const holidayUrl = `${args.deployBase}/${effectiveSlug}/holiday`;
     if (result.ok) args.setDeployStatus(null);
     args.setDeployModal({ slug: effectiveSlug, primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }, [args]);
