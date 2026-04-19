@@ -21,12 +21,14 @@ import { saveProject } from "../storage/projectStore";
 export async function deployGateway(
   project: ProjectData,
   deployPayload?: Record<string, unknown>,
+  opts?: { productKey?: string; deployBase?: string },
 ): Promise<DeployResult> {
   const body = JSON.stringify({
     slug: project.slug,
+    productKey: opts?.productKey,
+    deployBase: opts?.deployBase,
     data: deployPayload ?? project,
   });
-
   try {
     const res = await fetch(R2_DEPLOY_ENDPOINT, {
       method: "POST",
