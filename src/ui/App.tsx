@@ -837,8 +837,9 @@ export function App() {
     setDeploying,
     setDeployStatus,
     setProject,
-    setIsSaved,
+       setIsSaved,
     setDeployModal,
+    productKey: selectedProduct,
     deployBase: PRODUCT_CONFIG[selectedProduct].base,
   });
 
