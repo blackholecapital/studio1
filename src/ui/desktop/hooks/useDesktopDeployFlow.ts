@@ -6,6 +6,19 @@ import { buildDesktopDeployBundle } from "../../../services/deploy/buildPayload"
 import { saveProject, deployGateway, downloadProjectJson } from "../../state/editorExport";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 
+function inferProductPrefix(deployBase: string) {
+  const value = String(deployBase || "").toLowerCase();
+  if (value.includes("biz")) return "biz";
+  if (value.includes("ad")) return "ad";
+  return "gate";
+}
+
+function normalizeDeploySlug(rawSlug: string, deployBase: string) {
+  const slug = String(rawSlug || "").trim().toLowerCase();
+  if (/^(xyz-(biz|ad|gate)-|biz-|ad-|gate-)/.test(slug)) return slug;
+  return `${inferProductPrefix(deployBase)}-${slug}`;
+}
+
 type Args = {
   slug: string;
   setSlug: (next: string) => void;
@@ -54,7 +67,7 @@ export function useDesktopDeployFlow(args: Args) {
       return;
     }
 
-    const effectiveSlug = ensureUniqueSlug(args.slug);
+    const effectiveSlug = normalizeDeploySlug(ensureUniqueSlug(args.slug), args.deployBase);
     if (effectiveSlug !== args.slug) args.setSlug(effectiveSlug);
 
     const full: ProjectData = {

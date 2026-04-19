@@ -15,6 +15,19 @@ import { buildMobileDeployBundle } from "../../../services/deploy/buildPayload";
 import { wallpaperCatalog } from "../../../core/wallpaperCatalog";
 import { mobileWallpaperCatalog } from "../../../core/mobileWallpaperCatalog";
 
+function inferProductPrefix(base: string) {
+  const value = String(base || "").toLowerCase();
+  if (value.includes("biz")) return "biz";
+  if (value.includes("ad")) return "ad";
+  return "gate";
+}
+
+function normalizeDeploySlug(rawSlug: string, base: string) {
+  const slug = String(rawSlug || "").trim().toLowerCase();
+  if (/^(xyz-(biz|ad|gate)-|biz-|ad-|gate-)/.test(slug)) return slug;
+  return `${inferProductPrefix(base)}-${slug}`;
+}
+
 type ExclusiveTileState = { url: string; price: string; locked: boolean }[];
 
 type Args = {
@@ -40,9 +53,10 @@ export function useMobileDeployFlow(args: Args) {
       setTimeout(() => args.setDeployStatus(null), 3500);
       return;
     }
+    const normalizedSlug = normalizeDeploySlug(args.slug, GATEWAY_BASE);
     const full: ProjectData = {
       ...args.project,
-      slug: args.slug,
+      slug: normalizedSlug,
       pages: { ...args.project.pages, [args.page]: cardStateToPageData(args.cardState, args.wallpaper) },
     };
     saveProject(full);
@@ -69,10 +83,10 @@ export function useMobileDeployFlow(args: Args) {
     const actualWsW = args.workspaceRef.current?.offsetWidth ?? args.wsDims.width;
     const actualWsH = args.wsDims.height;
     const { main: mainPayload, holiday: holidayPayload } = buildMobileDeployBundle(
-      args.slug,
+      normalizedSlug,
       full.pages,
       {
-        slug: args.slug,
+        slug: normalizedSlug,
         scaleParams: { actualWsW, actualWsH },
         wallpaperCatalog,
         mobileWallpaperCatalog,
@@ -85,8 +99,8 @@ export function useMobileDeployFlow(args: Args) {
     const result = await deployGateway(full, { main: mainPayload, holiday: holidayPayload });
     args.setDeploying(false);
     args.setDeployStatus(null);
-    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${args.slug}/home`;
-    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${args.slug}/holiday`;
+    const primaryUrl = result.primaryUrl ?? `${GATEWAY_BASE}/${normalizedSlug}/home`;
+    const holidayUrl = result.holidayUrl ?? `${GATEWAY_BASE}/${normalizedSlug}/holiday`;
     args.setDeployModal({ primaryUrl, holidayUrl, ok: result.ok, error: result.error });
   }, [args]);
 

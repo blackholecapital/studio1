@@ -9,10 +9,35 @@ function withCors(response, request, env) {
   return response;
 }
 
+function parseSlugInfo(slug) {
+  const value = String(slug || "").trim().toLowerCase();
+  const paid = value.startsWith("xyz-");
+  const product =
+    value.startsWith("xyz-biz-") || value.startsWith("biz-") ? "biz" :
+    value.startsWith("xyz-ad-") || value.startsWith("ad-") ? "ad" :
+    "gate";
+  return { slug: value, paid, product };
+}
+
+function pickBucket(env, info) {
+  if (!info.paid) return env?.DEMO_BUCKET || null;
+  if (info.product === "biz") return env?.BIZPAGES_TENANTS || null;
+  if (info.product === "ad") return env?.ADPAGES_TENANTS || null;
+  return env?.TENANTS_BUCKET || null;
+}
+
+function pickBaseUrl(env, info) {
+  const biz  = String(env?.BIZ_BASE_URL  || "https://bizpages.xyz-labs.xyz").replace(/\/$/, "");
+  const ad   = String(env?.AD_BASE_URL   || "https://ad-pages.xyz-labs.xyz").replace(/\/$/, "");
+  const gate = String(env?.GATE_BASE_URL || "https://gateway.xyz-labs.xyz").replace(/\/$/, "");
+  if (info.product === "biz") return biz;
+  if (info.product === "ad") return ad;
+  return gate;
+}
+
 async function handleDeploy({ request, env }) {
   if (!env?.DEMO_BUCKET) return Errors.MISSING_BINDING("DEMO_BUCKET");
 
-  // Guard request size
   const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
   if (contentLength > MAX_DEPLOY_BODY_SIZE) {
     return Errors.PAYLOAD_TOO_LARGE(`Body exceeds ${MAX_DEPLOY_BODY_SIZE / 1024}KB limit`);
@@ -29,34 +54,65 @@ async function handleDeploy({ request, env }) {
     return Errors.BAD_REQUEST("Body must be a JSON object");
   }
 
-  // Dual-deploy format: { main: {...}, holiday: {...} }
-  if (!body.main || !body.holiday) {
-    return Errors.BAD_REQUEST("Expected dual-deploy payload { main, holiday }");
-  }
+  const mainPayload =
+    body?.main ??
+    body?.data?.main ??
+    body?.data ??
+    null;
 
-  if (typeof body.main !== "object" || typeof body.holiday !== "object") {
-    return Errors.BAD_REQUEST("main and holiday must be objects");
-  }
+  const holidayPayload =
+    body?.holiday ??
+    body?.data?.holiday ??
+    null;
 
-  const slug = sanitizeSlug(body.main?.slug ?? body.holiday?.slug ?? "");
+  const rawSlug =
+    body?.slug ??
+    mainPayload?.slug ??
+    holidayPayload?.slug ??
+    "";
+
+  const slug = sanitizeSlug(rawSlug);
   if (!slug) return Errors.BAD_REQUEST("Missing or invalid slug");
 
-  const mainKey    = `json/${slug}/main.json`;
-  const siteKey    = `json/${slug}/site.json`;
-  const holidayKey = `json/${slug}/holiday.json`;
+  const slugInfo = parseSlugInfo(slug);
+  const bucket = pickBucket(env, slugInfo);
+  if (!bucket) {
+    return Errors.BAD_REQUEST(`Missing bucket binding for product '${slugInfo.product}'`);
+  }
 
-  await putJson(env.DEMO_BUCKET, mainKey, body.main);
-  // Compatibility: receiver expects site.json
-  await putJson(env.DEMO_BUCKET, siteKey, body.main);
-  await putJson(env.DEMO_BUCKET, holidayKey, body.holiday);
+  if (!mainPayload || typeof mainPayload !== "object") {
+    return Errors.BAD_REQUEST("Missing deploy payload");
+  }
 
-  const base = String(env.DEMO_BASE_URL || "https://homeway.xyz-labs.xyz").replace(/\/$/, "");
+  const normalizedMain = { ...mainPayload, slug: slugInfo.slug };
+  const normalizedHoliday =
+    holidayPayload && typeof holidayPayload === "object"
+      ? { ...holidayPayload, slug: slugInfo.slug }
+      : null;
+
+  const root = slugInfo.paid ? `tenants/${slugInfo.slug}` : `json/${slugInfo.slug}`;
+  const siteKey = `${root}/site.json`;
+  const holidayKey = `${root}/holiday.json`;
+
+  await putJson(bucket, siteKey, normalizedMain);
+  if (normalizedHoliday) {
+    await putJson(bucket, holidayKey, normalizedHoliday);
+  }
+
+  if (slugInfo.paid && slugInfo.product === "gate") {
+    await putJson(bucket, `${root}/gate.json`, normalizedMain);
+  }
+
+  const base = pickBaseUrl(env, slugInfo);
+
   return json({
     ok: true,
-    slug,
-    primaryUrl: `${base}/${slug}/home`,
-    holidayUrl: `${base}/${slug}/holiday`,
-    keys: { main: mainKey, site: siteKey, holiday: holidayKey },
+    slug: slugInfo.slug,
+    product: slugInfo.product,
+    paid: slugInfo.paid,
+    primaryUrl: `${base}/${slugInfo.slug}/home`,
+    holidayUrl: `${base}/${slugInfo.slug}/holiday`,
+    keys: { site: siteKey, holiday: holidayKey },
   });
 }
 
